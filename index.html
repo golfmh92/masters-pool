@@ -122,6 +122,21 @@ body::before{content:'';position:fixed;inset:0;background:
 .lb-expand .golfer-row{background:transparent;border:none;box-shadow:none;margin:0;padding:8px 0;border-bottom:1px solid var(--border);border-radius:0}
 .lb-expand .golfer-row:last-child{border-bottom:none}
 
+/* ===== Payouts section ===== */
+.payout-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.payout-card-header{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--green);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.payout-card-header .toggle-arrow{transition:transform .2s;color:var(--text3)}
+.payout-card.open .toggle-arrow{transform:rotate(180deg)}
+.payout-card-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.payout-card.open .payout-card-body{max-height:600px}
+.payout-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.payout-row:last-child{border-bottom:none}
+.payout-row .payout-name{font-weight:500}
+.payout-row .payout-amount{font-weight:700;font-family:var(--font-display);font-size:16px}
+.payout-row .payout-amount.positive{color:var(--green)}
+.payout-row .payout-amount.negative{color:var(--red)}
+.payout-row .payout-label{font-size:11px;color:var(--text3)}
+
 /* ===== Teams ===== */
 .team-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .team-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2)}
@@ -275,6 +290,7 @@ body::before{content:'';position:fixed;inset:0;background:
     <!-- LEADERBOARD -->
     <div class="view active" id="viewLeaderboard">
       <div class="stats-row" id="statsRow"></div>
+      <div id="payoutSection"></div>
       <div class="round-tabs" id="lbRoundTabs"></div>
       <div id="leaderboardList"></div>
     </div>
@@ -651,21 +667,74 @@ function getCountingGolfers(participantId, round) {
   }));
 }
 
+function renderPayouts(pot, ranking) {
+  const section = document.getElementById('payoutSection');
+  if (S.participants.length < 2) { section.innerHTML = ''; return; }
+
+  const p1 = Math.round(pot * 0.6);
+  const p2 = Math.round(pot * 0.3);
+  const p3 = pot - p1 - p2;
+
+  // Calculate net per person: payout - entry fee
+  const payouts = ranking.map((t, i) => {
+    let payout = 0;
+    if (!t.isEliminated) {
+      const r = ranking.filter(x => !x.isEliminated).indexOf(t);
+      if (r === 0) payout = p1;
+      else if (r === 1) payout = p2;
+      else if (r === 2) payout = p3;
+    }
+    const net = payout - ENTRY_FEE;
+    return { name: t.name, payout, net };
+  });
+
+  let rows = '';
+  // Winners first
+  const winners = payouts.filter(p => p.net > 0);
+  const losers = payouts.filter(p => p.net <= 0);
+
+  winners.forEach(w => {
+    rows += `<div class="payout-row">
+      <div><div class="payout-name">${esc(w.name)}</div><div class="payout-label">Gewinnt ${fmtMoney(w.payout)}, zahlt ${fmtMoney(ENTRY_FEE)} ein</div></div>
+      <div class="payout-amount positive">+${fmtMoney(w.net)}</div>
+    </div>`;
+  });
+
+  // Show a summary for the rest
+  if (losers.length > 0) {
+    rows += `<div class="payout-row" style="color:var(--text3)">
+      <div><div class="payout-name" style="color:var(--text2)">Alle anderen (${losers.length})</div><div class="payout-label">Einsatz: ${fmtMoney(ENTRY_FEE)}</div></div>
+      <div class="payout-amount negative">-${fmtMoney(ENTRY_FEE)}</div>
+    </div>`;
+  }
+
+  section.innerHTML = `<div class="payout-card" onclick="this.classList.toggle('open')">
+    <div class="payout-card-header">
+      <span>Payouts</span>
+      <svg class="toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="payout-card-body">${rows}</div>
+  </div>`;
+}
+
 function renderLeaderboard() {
   const pot = S.participants.length * ENTRY_FEE;
+  const ranking = getRanking();
+
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card"><div class="stat-val">${S.participants.length}</div><div class="stat-label">Mitspieler</div></div>
     <div class="stat-card"><div class="stat-val">${fmtMoney(pot)}</div><div class="stat-label">Pot</div></div>
     <div class="stat-card"><div class="stat-val">${fmtMoney(pot*.6)}</div><div class="stat-label">1. Platz</div></div>
   `;
 
+  // Payout section
+  renderPayouts(pot, ranking);
+
   // Round tabs
   const days = ['Gesamt','Do','Fr','Sa','So'];
   document.getElementById('lbRoundTabs').innerHTML = days.map((d, i) =>
     `<button class="round-tab ${S.lbRound === i ? 'active' : ''}" onclick="setLbRound(${i})">${d}</button>`
   ).join('');
-
-  const ranking = getRanking();
   if (ranking.length === 0) {
     document.getElementById('leaderboardList').innerHTML = `
       <div class="empty"><div class="empty-icon">&#9971;</div><h3>Noch keine Mitspieler</h3><p>Mitspieler werden im Draft Tab hinzugef&uuml;gt</p></div>`;
