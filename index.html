@@ -268,6 +268,15 @@ body::before{content:'';position:fixed;inset:0;background:
 .field-item.selected{background:var(--green-dim);color:var(--green);font-weight:600}
 .field-item.drafted{opacity:.35;pointer-events:none;text-decoration:line-through}
 .field-status{font-size:11px;color:var(--text3);margin-left:6px}
+
+/* ===== Identity picker ===== */
+.identity-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.identity-bar label{font-size:12px;color:var(--text3);white-space:nowrap;font-weight:500}
+.identity-bar select{flex:1;padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:500;-webkit-appearance:none;appearance:none}
+.payout-row.mine{background:var(--green-dim);border-radius:6px;margin:2px 8px;border:1px solid rgba(0,103,71,.15)}
+.payout-row.mine .payout-name{color:var(--green);font-weight:700}
+.lb-entry.mine{border-color:var(--green);border-width:2px}
+.team-card.mine{border-color:var(--green);border-width:2px}
 </style>
 </head>
 <body>
@@ -282,6 +291,14 @@ body::before{content:'';position:fixed;inset:0;background:
     <button class="header-admin" id="btnAdmin" onclick="toggleAdmin()">
       <svg viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
+  </div>
+
+  <!-- Identity -->
+  <div class="identity-bar" id="identityBar" style="display:none">
+    <label>Ich bin:</label>
+    <select id="identitySelect" onchange="setIdentity(this.value)">
+      <option value="">— Auswählen —</option>
+    </select>
   </div>
 
   <!-- Views -->
@@ -491,7 +508,8 @@ let S = {
   activeTab: 'leaderboard',
   selectedTeam: null,
   scoringRound: 1,
-  lbRound: 0, // 0 = Gesamt, 1-4 = specific round
+  lbRound: 0,
+  myName: '',
   // Live scoring
   liveData: null,
   liveScores: {},
@@ -508,8 +526,28 @@ let S = {
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) setAdmin(true, session.user.id);
+  // Restore identity from localStorage
+  S.myName = localStorage.getItem('masters_pool_identity') || '';
   await loadAll();
+  updateIdentityBar();
   render();
+}
+
+function setIdentity(name) {
+  S.myName = name;
+  if (name) localStorage.setItem('masters_pool_identity', name);
+  else localStorage.removeItem('masters_pool_identity');
+  render();
+}
+
+function updateIdentityBar() {
+  const bar = document.getElementById('identityBar');
+  const sel = document.getElementById('identitySelect');
+  if (S.participants.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const sorted = [...S.participants].sort((a, b) => a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">— Auswählen —</option>' +
+    sorted.map(p => `<option value="${esc(p.name)}" ${p.name === S.myName ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
 }
 
 function setAdmin(yes, uid) {
@@ -634,6 +672,7 @@ function fmtMoney(val) {
 
 /* ===================== Render ===================== */
 function render() {
+  updateIdentityBar();
   renderLeaderboard();
   renderTeams();
   renderDraft();
@@ -732,7 +771,8 @@ function renderPayouts(pot, ranking) {
   for (const [recipient, txns] of Object.entries(byRecipient)) {
     rows += `<div style="padding:8px 16px 4px;font-size:12px;color:var(--green);font-weight:600">An ${esc(recipient)}:</div>`;
     txns.forEach(t => {
-      rows += `<div class="payout-row">
+      const mine = S.myName && (t.from === S.myName || recipient === S.myName);
+      rows += `<div class="payout-row${mine ? ' mine' : ''}">
         <div class="payout-name">${esc(t.from)}</div>
         <div class="payout-amount">${fmtMoney(t.amount)}</div>
       </div>`;
@@ -778,10 +818,12 @@ function renderLeaderboard() {
   document.getElementById('leaderboardList').innerHTML = ranking.map((t, i) => {
     if (!t.isEliminated) rank = i + 1;
     const rankDisplay = t.isEliminated ? '&times;' : (rank === 1 ? '&#129509;' : rank);
+    const isMine = S.myName && t.name === S.myName;
     const cls = [
       'lb-entry',
       t.isEliminated ? 'eliminated' : '',
-      rank === 1 && !t.isEliminated ? 'rank-1' : ''
+      rank === 1 && !t.isEliminated ? 'rank-1' : '',
+      isMine ? 'mine' : ''
     ].filter(Boolean).join(' ');
 
     // Score to display
@@ -893,7 +935,8 @@ function renderTeams() {
     const elimBadge = elim ? ' <span class="eliminated-badge">ELIMINATED</span>' : '';
     const bonusHtml = bonus > 0 ? `<span style="font-size:11px;color:var(--gold2);font-family:var(--font-body);font-weight:400;margin-left:4px">(-${bonus})</span>` : '';
 
-    html += `<div class="team-card${elim ? ' eliminated' : ''}">
+    const isMine = S.myName && p.name === S.myName;
+    html += `<div class="team-card${isMine ? ' mine' : ''}${elim ? ' eliminated' : ''}">
       <div class="team-card-header">
         <div class="team-card-name">${esc(p.name)}${elimBadge}</div>
         <div class="team-card-score ${totalCls}">${fmtScore(total)}${bonusHtml}</div>
