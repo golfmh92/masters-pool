@@ -108,10 +108,19 @@ body::before{content:'';position:fixed;inset:0;background:
 
 .eliminated-badge{display:inline-flex;align-items:center;gap:3px;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:6px}
 
+.lb-golfers{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.lb-golfer-chip{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--bg2);color:var(--text2);white-space:nowrap}
+.lb-golfer-chip.counting{background:var(--green-dim);color:var(--green);font-weight:500}
+.lb-golfer-chip.cut{opacity:.4;text-decoration:line-through}
+
 /* ===== Teams ===== */
-.team-selector{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch}
-.team-pill{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;background:var(--card);border:1px solid var(--border);color:var(--text2);transition:all .2s;flex-shrink:0}
-.team-pill.active{background:var(--green);border-color:var(--green);color:#fff}
+.team-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.team-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.team-card-name{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text)}
+.team-card-score{font-family:var(--font-display);font-size:20px;font-weight:700}
+.team-card-body{padding:8px 0}
+.team-card .golfer-row{border:none;border-radius:0;margin:0;border-bottom:1px solid var(--border);box-shadow:none}
+.team-card .golfer-row:last-child{border-bottom:none}
 
 .golfer-row{display:flex;align-items:center;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .golfer-row.cut{opacity:.4;text-decoration:line-through}
@@ -257,13 +266,13 @@ body::before{content:'';position:fixed;inset:0;background:
     <!-- LEADERBOARD -->
     <div class="view active" id="viewLeaderboard">
       <div class="stats-row" id="statsRow"></div>
+      <div class="round-tabs" id="lbRoundTabs"></div>
       <div id="leaderboardList"></div>
     </div>
 
     <!-- TEAMS -->
     <div class="view" id="viewTeams">
-      <div class="team-selector" id="teamSelector"></div>
-      <div id="teamDetail"></div>
+      <div id="teamsList"></div>
     </div>
 
     <!-- DRAFT -->
@@ -456,6 +465,7 @@ let S = {
   activeTab: 'leaderboard',
   selectedTeam: null,
   scoringRound: 1,
+  lbRound: 0, // 0 = Gesamt, 1-4 = specific round
   // Live scoring
   liveData: null,
   liveScores: {},
@@ -605,6 +615,32 @@ function render() {
   updateFab();
 }
 
+function setLbRound(r) {
+  S.lbRound = r;
+  renderLeaderboard();
+}
+
+function getCountingGolfers(participantId, round) {
+  const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
+  const count = round <= 2 ? 4 : 3;
+  const withScores = teamGolfers
+    .map(g => {
+      const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+      const sc = getGolferScore(g.id, round);
+      return { ...g, roundScore: sc, isCut };
+    })
+    .filter(g => !g.isCut || round <= 2);
+  const scored = withScores.filter(g => g.roundScore !== null).sort((a, b) => a.roundScore - b.roundScore);
+  const countingIds = new Set(scored.slice(0, count).map(g => g.id));
+  return withScores.map(g => ({
+    name: g.name,
+    score: g.roundScore,
+    isCounting: countingIds.has(g.id),
+    isCut: g.isCut,
+    thru: g._live ? g._live.thru : null
+  }));
+}
+
 function renderLeaderboard() {
   const pot = S.participants.length * ENTRY_FEE;
   document.getElementById('statsRow').innerHTML = `
@@ -613,12 +649,20 @@ function renderLeaderboard() {
     <div class="stat-card"><div class="stat-val">${fmtMoney(pot*.6)}</div><div class="stat-label">1. Platz</div></div>
   `;
 
+  // Round tabs
+  const days = ['Gesamt','Do','Fr','Sa','So'];
+  document.getElementById('lbRoundTabs').innerHTML = days.map((d, i) =>
+    `<button class="round-tab ${S.lbRound === i ? 'active' : ''}" onclick="setLbRound(${i})">${d}</button>`
+  ).join('');
+
   const ranking = getRanking();
   if (ranking.length === 0) {
     document.getElementById('leaderboardList').innerHTML = `
       <div class="empty"><div class="empty-icon">&#9971;</div><h3>Noch keine Mitspieler</h3><p>Mitspieler werden im Draft Tab hinzugef&uuml;gt</p></div>`;
     return;
   }
+
+  const rd = S.lbRound; // 0=total, 1-4=round
 
   let rank = 0;
   document.getElementById('leaderboardList').innerHTML = ranking.map((t, i) => {
@@ -629,99 +673,107 @@ function renderLeaderboard() {
       t.isEliminated ? 'eliminated' : '',
       rank === 1 && !t.isEliminated ? 'rank-1' : ''
     ].filter(Boolean).join(' ');
-    const totalCls = t.total !== null ? (t.total < 0 ? 'under' : t.total > 0 ? 'over' : 'even') : '';
-    const roundsHtml = t.rounds.map((r, ri) => `<span>R${ri+1}: ${fmtScore(r)}</span>`).join('');
-    // Count how many golfers have live match
-    const teamGolfers = S.golfers.filter(g => g.participant_id === t.id);
-    const liveCount = teamGolfers.filter(g => g._liveMatched).length;
-    const liveInfo = S.liveActive && liveCount > 0 ? `<span style="color:var(--green)">${liveCount}/5 live</span>` : '';
+
+    // Score to display
+    const displayScore = rd === 0 ? t.total : t.rounds[rd - 1];
+    const totalCls = displayScore !== null ? (displayScore < 0 ? 'under' : displayScore > 0 ? 'over' : 'even') : '';
+
+    // Detail: golfer chips for selected round, or round summary for total
+    let detailHtml = '';
+    if (rd === 0) {
+      // Total view: show round scores
+      detailHtml = '<div class="lb-detail">' + t.rounds.map((r, ri) => `<span>R${ri+1}: ${fmtScore(r)}</span>`).join('') + '</div>';
+    } else {
+      // Round view: show counting golfers
+      const golfers = getCountingGolfers(t.id, rd);
+      detailHtml = '<div class="lb-golfers">' + golfers.map(g => {
+        const scoreTxt = g.score !== null ? (g.score - PAR === 0 ? 'E' : fmtScore(g.score - PAR)) : (g.thru || '—');
+        const cls = g.isCut ? 'cut' : (g.isCounting ? 'counting' : '');
+        return `<span class="lb-golfer-chip ${cls}">${esc(g.name)} ${scoreTxt}</span>`;
+      }).join('') + '</div>';
+    }
+
     const bonusHtml = t.bonus > 0 ? `<div class="lb-bonus">Bonus: -${t.bonus}</div>` : '';
     const elimBadge = t.isEliminated ? '<span class="eliminated-badge">ELIMINATED</span>' : '';
     return `<div class="${cls}">
       <div class="lb-rank">${rankDisplay}</div>
       <div class="lb-info">
         <div class="lb-name">${esc(t.name)}${elimBadge}</div>
-        <div class="lb-detail">${roundsHtml}${liveInfo}</div>
+        ${detailHtml}
       </div>
       <div class="lb-score">
-        <div class="lb-total ${totalCls}">${fmtScore(t.total)}</div>
-        ${bonusHtml}
+        <div class="lb-total ${totalCls}">${fmtScore(displayScore)}</div>
+        ${rd === 0 ? bonusHtml : ''}
       </div>
     </div>`;
   }).join('');
 }
 
 function renderTeams() {
-  const sel = document.getElementById('teamSelector');
-  sel.innerHTML = S.participants.map(p =>
-    `<button class="team-pill ${S.selectedTeam === p.id ? 'active' : ''}" onclick="selectTeam('${p.id}')">${esc(p.name)}</button>`
-  ).join('');
+  const container = document.getElementById('teamsList');
 
-  const detail = document.getElementById('teamDetail');
-  if (!S.selectedTeam && S.participants.length > 0) {
-    S.selectedTeam = S.participants[0].id;
-    sel.innerHTML = S.participants.map(p =>
-      `<button class="team-pill ${S.selectedTeam === p.id ? 'active' : ''}" onclick="selectTeam('${p.id}')">${esc(p.name)}</button>`
-    ).join('');
-  }
-
-  if (!S.selectedTeam) {
-    detail.innerHTML = '<div class="empty"><div class="empty-icon">&#128101;</div><h3>Keine Mitspieler</h3></div>';
+  if (S.participants.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128101;</div><h3>Keine Mitspieler</h3></div>';
     return;
   }
 
-  const teamGolfers = S.golfers.filter(g => g.participant_id === S.selectedTeam);
-  if (teamGolfers.length === 0) {
-    detail.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Noch keine Spieler gedraftet</h3></div>';
-    return;
+  let html = '';
+  for (const p of S.participants) {
+    const teamGolfers = S.golfers.filter(g => g.participant_id === p.id);
+    const total = calcTeamTotal(p.id);
+    const bonus = getTeamBonusTotal(p.id);
+    const elim = checkEliminated(p.id);
+    const totalCls = total !== null ? (total < 0 ? 'under' : total > 0 ? 'over' : 'even') : '';
+    const elimBadge = elim ? ' <span class="eliminated-badge">ELIMINATED</span>' : '';
+    const bonusHtml = bonus > 0 ? `<span style="font-size:11px;color:var(--gold2);font-family:var(--font-body);font-weight:400;margin-left:4px">(-${bonus})</span>` : '';
+
+    html += `<div class="team-card${elim ? ' eliminated' : ''}">
+      <div class="team-card-header">
+        <div class="team-card-name">${esc(p.name)}${elimBadge}</div>
+        <div class="team-card-score ${totalCls}">${fmtScore(total)}${bonusHtml}</div>
+      </div>
+      <div class="team-card-body">`;
+
+    if (teamGolfers.length === 0) {
+      html += '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Noch keine Spieler gedraftet</div>';
+    } else {
+      // Determine counting golfers
+      const countingMap = {};
+      for (let r = 1; r <= 4; r++) {
+        const count = r <= 2 ? 4 : 3;
+        const withScores = teamGolfers
+          .filter(g => r < 3 || g.made_cut)
+          .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
+          .filter(x => x.score !== null)
+          .sort((a, b) => a.score - b.score);
+        withScores.slice(0, count).forEach(x => { countingMap[x.id + '_' + r] = true; });
+      }
+
+      html += `<div class="round-headers"><span>R1</span><span>R2</span><span>R3</span><span>R4</span></div>`;
+      html += teamGolfers.map(g => {
+        const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+        const cutCls = isCut ? 'cut' : '';
+        const rounds = [1,2,3,4].map(r => {
+          const sc = getGolferScore(g.id, r);
+          const rel = sc !== null ? sc - PAR : null;
+          const cls = scoreClass(rel);
+          const counting = countingMap[g.id + '_' + r];
+          return `<div class="golfer-rd ${cls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
+        }).join('');
+        const thruHtml = (g._live && g._live.thru && !isCut) ? `<div style="font-size:10px;color:var(--text3);margin-left:6px;white-space:nowrap">${g._live.thru}</div>` : '';
+        return `<div class="golfer-row ${cutCls}">
+          <div class="golfer-name">${esc(g.name)}</div>
+          <div class="golfer-rounds">${rounds}</div>
+          ${thruHtml}
+          ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
+        </div>`;
+      }).join('');
+    }
+
+    html += '</div></div>';
   }
 
-  // Determine which golfers "count" per round
-  const countingMap = {};
-  for (let r = 1; r <= 4; r++) {
-    const count = r <= 2 ? 4 : 3;
-    const withScores = teamGolfers
-      .filter(g => r < 3 || g.made_cut)
-      .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
-      .filter(x => x.score !== null)
-      .sort((a, b) => a.score - b.score);
-    const counting = withScores.slice(0, count).map(x => x.id);
-    counting.forEach(id => { countingMap[id + '_' + r] = true; });
-  }
-
-  let html = `<div class="round-headers"><span>R1</span><span>R2</span><span>R3</span><span>R4</span></div>`;
-  html += teamGolfers.map(g => {
-    const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
-    const cutCls = isCut ? 'cut' : '';
-    const rounds = [1,2,3,4].map(r => {
-      const sc = getGolferScore(g.id, r);
-      const rel = sc !== null ? sc - PAR : null;
-      const cls = scoreClass(rel);
-      const counting = countingMap[g.id + '_' + r];
-      return `<div class="golfer-rd ${cls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
-    }).join('');
-    const thruHtml = (g._live && g._live.thru && !isCut) ? `<div style="font-size:10px;color:var(--text3);margin-left:6px;white-space:nowrap">${g._live.thru}</div>` : '';
-    return `<div class="golfer-row ${cutCls}">
-      <div class="golfer-name">${esc(g.name)}</div>
-      <div class="golfer-rounds">${rounds}</div>
-      ${thruHtml}
-      ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
-    </div>`;
-  }).join('');
-
-  // Team summary
-  const p = S.participants.find(x => x.id === S.selectedTeam);
-  const total = calcTeamTotal(S.selectedTeam);
-  const bonus = getTeamBonusTotal(S.selectedTeam);
-  const elim = checkEliminated(S.selectedTeam);
-  html += `<div style="margin-top:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-    <div style="font-family:var(--font-display);font-size:14px;color:var(--text2);margin-bottom:4px">Team Score</div>
-    <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:${total !== null && total < 0 ? 'var(--green)' : total > 0 ? 'var(--bogey)' : 'var(--text)'}">${fmtScore(total)}</div>
-    ${bonus > 0 ? `<div style="font-size:12px;color:var(--gold2);margin-top:4px">inkl. Bonus -${bonus}</div>` : ''}
-    ${elim ? '<div class="eliminated-badge" style="margin-top:8px">ELIMINATED</div>' : ''}
-  </div>`;
-
-  detail.innerHTML = html;
+  container.innerHTML = html;
 }
 
 function renderDraft() {
@@ -1033,11 +1085,6 @@ async function removeBonus(id) {
   showToast('Bonus entfernt');
 }
 
-/* ===================== Team Selection ===================== */
-function selectTeam(id) {
-  S.selectedTeam = id;
-  renderTeams();
-}
 
 /* ===================== UI Helpers ===================== */
 function openModal(id) {
