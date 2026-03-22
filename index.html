@@ -675,42 +675,64 @@ function renderPayouts(pot, ranking) {
   const p2 = Math.round(pot * 0.3);
   const p3 = pot - p1 - p2;
 
-  // Calculate net per person: payout - entry fee
-  const payouts = ranking.map((t, i) => {
+  // Net per person (payout - entry)
+  const activeRanking = ranking.filter(x => !x.isEliminated);
+  const balances = ranking.map(t => {
+    const activeIdx = activeRanking.indexOf(t);
     let payout = 0;
-    if (!t.isEliminated) {
-      const r = ranking.filter(x => !x.isEliminated).indexOf(t);
-      if (r === 0) payout = p1;
-      else if (r === 1) payout = p2;
-      else if (r === 2) payout = p3;
+    if (activeIdx === 0) payout = p1;
+    else if (activeIdx === 1) payout = p2;
+    else if (activeIdx === 2) payout = p3;
+    return { name: t.name, net: payout - ENTRY_FEE };
+  });
+
+  // Settlement: minimize transfers (greedy algorithm)
+  const creditors = balances.filter(b => b.net > 0).map(b => ({ ...b, remaining: b.net }));
+  const debtors = balances.filter(b => b.net < 0).map(b => ({ ...b, remaining: -b.net }));
+  const transfers = [];
+
+  let ci = 0, di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const amount = Math.min(creditors[ci].remaining, debtors[di].remaining);
+    if (amount > 0) {
+      transfers.push({ from: debtors[di].name, to: creditors[ci].name, amount });
+      creditors[ci].remaining -= amount;
+      debtors[di].remaining -= amount;
     }
-    const net = payout - ENTRY_FEE;
-    return { name: t.name, payout, net };
-  });
-
-  let rows = '';
-  // Winners first
-  const winners = payouts.filter(p => p.net > 0);
-  const losers = payouts.filter(p => p.net <= 0);
-
-  winners.forEach(w => {
-    rows += `<div class="payout-row">
-      <div><div class="payout-name">${esc(w.name)}</div><div class="payout-label">Gewinnt ${fmtMoney(w.payout)}, zahlt ${fmtMoney(ENTRY_FEE)} ein</div></div>
-      <div class="payout-amount positive">+${fmtMoney(w.net)}</div>
-    </div>`;
-  });
-
-  // Show a summary for the rest
-  if (losers.length > 0) {
-    rows += `<div class="payout-row" style="color:var(--text3)">
-      <div><div class="payout-name" style="color:var(--text2)">Alle anderen (${losers.length})</div><div class="payout-label">Einsatz: ${fmtMoney(ENTRY_FEE)}</div></div>
-      <div class="payout-amount negative">-${fmtMoney(ENTRY_FEE)}</div>
-    </div>`;
+    if (creditors[ci].remaining === 0) ci++;
+    if (debtors[di].remaining === 0) di++;
   }
+
+  // Render
+  let rows = '';
+
+  // Podium summary
+  const places = [
+    { label: '1.', amount: p1, name: activeRanking[0]?.name },
+    { label: '2.', amount: p2, name: activeRanking[1]?.name },
+    { label: '3.', amount: p3, name: activeRanking[2]?.name }
+  ].filter(p => p.name);
+
+  rows += '<div style="padding:12px 16px 8px;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Gewinner</div>';
+  places.forEach(p => {
+    rows += `<div class="payout-row">
+      <div><span style="font-size:12px;color:var(--gold2);font-weight:700;margin-right:4px">${p.label}</span><span class="payout-name">${esc(p.name)}</span></div>
+      <div class="payout-amount positive">${fmtMoney(p.amount)}</div>
+    </div>`;
+  });
+
+  // Transfers
+  rows += '<div style="padding:12px 16px 8px;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;border-top:1px solid var(--border);margin-top:4px">Wer zahlt wem</div>';
+  transfers.forEach(t => {
+    rows += `<div class="payout-row">
+      <div class="payout-name">${esc(t.from)} <span style="color:var(--text3);font-weight:400">&rarr;</span> ${esc(t.to)}</div>
+      <div class="payout-amount">${fmtMoney(t.amount)}</div>
+    </div>`;
+  });
 
   section.innerHTML = `<div class="payout-card" onclick="this.classList.toggle('open')">
     <div class="payout-card-header">
-      <span>Payouts</span>
+      <span>Payouts &amp; Abrechnung</span>
       <svg class="toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
     </div>
     <div class="payout-card-body">${rows}</div>
