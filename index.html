@@ -270,9 +270,16 @@ body::before{content:'';position:fixed;inset:0;background:
 .field-status{font-size:11px;color:var(--text3);margin-left:6px}
 
 /* ===== Identity picker ===== */
-.identity-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
-.identity-bar label{font-size:12px;color:var(--text3);white-space:nowrap;font-weight:500}
-.identity-bar select{flex:1;padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:500;-webkit-appearance:none;appearance:none}
+.header-avatar{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;border:2px solid transparent;font-family:var(--font-body)}
+.header-avatar.set{background:var(--gold);color:var(--green);border-color:rgba(255,255,255,.3)}
+.header-avatar:active{transform:translateY(-50%) scale(.92)}
+.identity-dropdown{position:absolute;top:100%;left:16px;margin-top:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 30px rgba(0,0,0,.15);z-index:150;min-width:200px;max-height:320px;overflow-y:auto;opacity:0;pointer-events:none;transform:translateY(-8px);transition:all .2s}
+.identity-dropdown.open{opacity:1;pointer-events:auto;transform:translateY(0)}
+.id-option{padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.id-option:last-child{border-bottom:none}
+.id-option:active,.id-option:hover{background:var(--bg2)}
+.id-option.active{background:var(--green-dim);color:var(--green);font-weight:600}
+.id-option.none{color:var(--text3);font-style:italic}
 .payout-row.mine{background:var(--green-dim);border-radius:6px;margin:2px 8px;border:1px solid rgba(0,103,71,.15)}
 .payout-row.mine .payout-name{color:var(--green);font-weight:700}
 .lb-entry.mine{border-color:var(--green);border-width:2px}
@@ -285,20 +292,16 @@ body::before{content:'';position:fixed;inset:0;background:
 
   <!-- Header -->
   <div class="app-header">
+    <div class="header-avatar" id="avatarBtn" onclick="toggleIdentityDropdown()">
+      <span id="avatarText">?</span>
+    </div>
     <div class="header-title">The Masters Pool</div>
     <div class="header-sub">Augusta 2026</div>
     <div class="live-badge stale" id="liveBadge" style="display:none"><div class="live-dot"></div><span id="liveText">Live</span></div>
     <button class="header-admin" id="btnAdmin" onclick="toggleAdmin()">
       <svg viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-  </div>
-
-  <!-- Identity -->
-  <div class="identity-bar" id="identityBar" style="display:none">
-    <label>Ich bin:</label>
-    <select id="identitySelect" onchange="setIdentity(this.value)">
-      <option value="">— Auswählen —</option>
-    </select>
+    <div class="identity-dropdown" id="identityDropdown"></div>
   </div>
 
   <!-- Views -->
@@ -537,17 +540,44 @@ function setIdentity(name) {
   S.myName = name;
   if (name) localStorage.setItem('masters_pool_identity', name);
   else localStorage.removeItem('masters_pool_identity');
+  closeIdentityDropdown();
   render();
 }
 
 function updateIdentityBar() {
-  const bar = document.getElementById('identityBar');
-  const sel = document.getElementById('identitySelect');
-  if (S.participants.length === 0) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
+  const btn = document.getElementById('avatarBtn');
+  const txt = document.getElementById('avatarText');
+  if (S.myName) {
+    const initials = S.myName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    txt.textContent = initials || '?';
+    btn.classList.add('set');
+  } else {
+    txt.textContent = '?';
+    btn.classList.remove('set');
+  }
+}
+
+function toggleIdentityDropdown() {
+  const dd = document.getElementById('identityDropdown');
+  if (dd.classList.contains('open')) { closeIdentityDropdown(); return; }
   const sorted = [...S.participants].sort((a, b) => a.name.localeCompare(b.name));
-  sel.innerHTML = '<option value="">— Auswählen —</option>' +
-    sorted.map(p => `<option value="${esc(p.name)}" ${p.name === S.myName ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  dd.innerHTML = `<div class="id-option none" onclick="setIdentity('')">Niemand (zurücksetzen)</div>` +
+    sorted.map(p =>
+      `<div class="id-option${p.name === S.myName ? ' active' : ''}" onclick="setIdentity('${esc(p.name)}')">${esc(p.name)}</div>`
+    ).join('');
+  dd.classList.add('open');
+  // Close on outside click
+  setTimeout(() => document.addEventListener('click', closeIdentityOnOutside, { once: true }), 10);
+}
+
+function closeIdentityDropdown() {
+  document.getElementById('identityDropdown').classList.remove('open');
+}
+
+function closeIdentityOnOutside(e) {
+  if (!e.target.closest('.header-avatar') && !e.target.closest('.identity-dropdown')) {
+    closeIdentityDropdown();
+  }
 }
 
 function setAdmin(yes, uid) {
