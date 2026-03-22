@@ -260,6 +260,9 @@ body::before{content:'';position:fixed;inset:0;background:
 .order-item .order-actions{display:flex;gap:4px}
 .order-item .order-actions button{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--text3);transition:all .15s}
 .order-item .order-actions button:hover{color:var(--red);background:var(--red-bg)}
+.order-num-input{width:32px;height:28px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--green);font-size:13px;font-weight:700;padding:0;-moz-appearance:textfield}
+.order-num-input::-webkit-inner-spin-button,.order-num-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.order-num-input:focus{border-color:var(--green);outline:none}
 
 /* ===== Field list (draft picker) ===== */
 .field-item{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
@@ -1041,7 +1044,9 @@ function renderDraft() {
   const ordered = [...S.participants].sort((a, b) => (a.draft_position || 99) - (b.draft_position || 99));
   html += ordered.map((p, i) => `
     <div class="order-item">
-      <div class="order-num">${p.draft_position || '?'}</div>
+      ${S.isAdmin
+        ? `<input type="number" inputmode="numeric" class="order-num-input" value="${p.draft_position || ''}" placeholder="?" onchange="updateDraftPosition('${p.id}',this.value)" onclick="event.stopPropagation()">`
+        : `<div class="order-num">${p.draft_position || '?'}</div>`}
       <div class="order-name">${esc(p.name)}</div>
       ${S.isAdmin ? `<div class="order-actions"><button onclick="removeParticipant('${p.id}')" title="Entfernen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>` : ''}
     </div>
@@ -1194,6 +1199,14 @@ async function removeParticipant(id) {
   await loadAll();
   render();
   showToast('Entfernt');
+}
+
+async function updateDraftPosition(id, value) {
+  const pos = parseInt(value);
+  if (isNaN(pos) || pos < 1) return;
+  await sb.from('masters_participants').update({ draft_position: pos }).eq('id', id);
+  await loadAll();
+  render();
 }
 
 async function randomizeDraftOrder() {
