@@ -227,6 +227,14 @@ body::before{content:'';position:fixed;inset:0;background:
 .order-item .order-actions{display:flex;gap:4px}
 .order-item .order-actions button{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--text3);transition:all .15s}
 .order-item .order-actions button:hover{color:var(--red);background:var(--red-bg)}
+
+/* ===== Field list (draft picker) ===== */
+.field-item{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.field-item:last-child{border-bottom:none}
+.field-item:hover,.field-item:active{background:var(--bg2)}
+.field-item.selected{background:var(--green-dim);color:var(--green);font-weight:600}
+.field-item.drafted{opacity:.35;pointer-events:none;text-decoration:line-through}
+.field-status{font-size:11px;color:var(--text3);margin-left:6px}
 </style>
 </head>
 <body>
@@ -295,7 +303,7 @@ body::before{content:'';position:fixed;inset:0;background:
           <div class="payout-seg payout-2">2. ~30%</div>
           <div class="payout-seg payout-3">3.</div>
         </div>
-        <div style="margin-top:8px;font-size:12px;color:var(--text3)">Pot = Teilnehmer &times; 20&euro;</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text3)">Pot = Mitspieler &times; 20&euro;</div>
       </div>
     </div>
 
@@ -353,14 +361,14 @@ body::before{content:'';position:fixed;inset:0;background:
   </div>
 </div>
 
-<!-- Add Participant Modal -->
+<!-- Add Mitspieler Modal -->
 <div class="modal-overlay" id="modalParticipant">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>Teilnehmer hinzuf&uuml;gen</h2>
+    <h2>Mitspieler hinzuf&uuml;gen</h2>
     <div class="form-group">
       <label>Name</label>
-      <input class="input" type="text" id="inputParticipantName" placeholder="Name eingeben">
+      <input class="input" type="text" id="inputParticipantName" placeholder="z.B. Max, Thomas, ...">
     </div>
     <div class="actions">
       <button class="btn btn-secondary" onclick="closeModal('modalParticipant')">Abbrechen</button>
@@ -375,12 +383,14 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="modal-handle"></div>
     <h2>Draft Pick</h2>
     <div class="form-group">
-      <label>Spieler (Golfer)</label>
-      <input class="input" type="text" id="inputGolferName" placeholder="z.B. Scottie Scheffler">
+      <label>Wer ist dran?</label>
+      <select class="input" id="selectDraftTeam"></select>
     </div>
     <div class="form-group">
-      <label>Team</label>
-      <select class="input" id="selectDraftTeam"></select>
+      <label>Golfer ausw&auml;hlen</label>
+      <input class="input" type="text" id="inputGolferSearch" placeholder="Suchen..." oninput="filterFieldList()">
+      <div id="fieldList" style="max-height:200px;overflow-y:auto;margin-top:8px;border-radius:var(--radius-sm);border:1px solid var(--border)"></div>
+      <input type="hidden" id="inputGolferName">
     </div>
     <div class="form-group">
       <label>Draft Runde</label>
@@ -447,12 +457,15 @@ let S = {
   selectedTeam: null,
   scoringRound: 1,
   // Live scoring
-  liveData: null,        // raw ESPN competitor data
-  liveScores: {},        // { golferName: { r1, r2, r3, r4, toPar, thru, status } }
+  liveData: null,
+  liveScores: {},
   liveEventName: '',
   liveLastUpdate: null,
   liveTimer: null,
-  liveActive: false
+  liveActive: false,
+  // Masters field
+  mastersField: [],      // [{name, country, rank}] from ESPN
+  fieldLoaded: false
 };
 
 /* ===================== Init ===================== */
@@ -595,7 +608,7 @@ function render() {
 function renderLeaderboard() {
   const pot = S.participants.length * ENTRY_FEE;
   document.getElementById('statsRow').innerHTML = `
-    <div class="stat-card"><div class="stat-val">${S.participants.length}</div><div class="stat-label">Teams</div></div>
+    <div class="stat-card"><div class="stat-val">${S.participants.length}</div><div class="stat-label">Mitspieler</div></div>
     <div class="stat-card"><div class="stat-val">${fmtMoney(pot)}</div><div class="stat-label">Pot</div></div>
     <div class="stat-card"><div class="stat-val">${fmtMoney(pot*.6)}</div><div class="stat-label">1. Platz</div></div>
   `;
@@ -603,7 +616,7 @@ function renderLeaderboard() {
   const ranking = getRanking();
   if (ranking.length === 0) {
     document.getElementById('leaderboardList').innerHTML = `
-      <div class="empty"><div class="empty-icon">&#9971;</div><h3>Noch keine Teams</h3><p>Teilnehmer werden im Draft Tab hinzugef&uuml;gt</p></div>`;
+      <div class="empty"><div class="empty-icon">&#9971;</div><h3>Noch keine Mitspieler</h3><p>Mitspieler werden im Draft Tab hinzugef&uuml;gt</p></div>`;
     return;
   }
 
@@ -653,7 +666,7 @@ function renderTeams() {
   }
 
   if (!S.selectedTeam) {
-    detail.innerHTML = '<div class="empty"><div class="empty-icon">&#128101;</div><h3>Keine Teams</h3></div>';
+    detail.innerHTML = '<div class="empty"><div class="empty-icon">&#128101;</div><h3>Keine Mitspieler</h3></div>';
     return;
   }
 
@@ -715,7 +728,7 @@ function renderDraft() {
   const c = document.getElementById('draftContent');
   if (S.participants.length === 0) {
     c.innerHTML = `<div class="empty"><div class="empty-icon">&#127183;</div><h3>Draft Board</h3>
-      <p>F&uuml;ge zuerst Teilnehmer hinzu</p></div>`;
+      <p>F&uuml;ge zuerst deine Mitspieler hinzu</p></div>`;
     return;
   }
 
@@ -724,12 +737,12 @@ function renderDraft() {
   // Participants + Draft Order
   if (S.isAdmin) {
     html += `<div style="display:flex;gap:8px;margin-bottom:16px">
-      <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openModal('modalParticipant')">+ Teilnehmer</button>
+      <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openModal('modalParticipant')">+ Mitspieler</button>
       <button class="btn btn-primary btn-sm" style="flex:1" onclick="randomizeDraftOrder()">&#127922; Auslosen</button>
     </div>`;
   }
 
-  html += '<div class="section-title">Draft Reihenfolge</div>';
+  html += '<div class="section-title">Mitspieler &amp; Draft Reihenfolge</div>';
   const ordered = [...S.participants].sort((a, b) => (a.draft_position || 99) - (b.draft_position || 99));
   html += ordered.map((p, i) => `
     <div class="order-item">
@@ -740,7 +753,14 @@ function renderDraft() {
   `).join('');
 
   // Draft Picks by Round (Snake order)
-  html += '<div class="section-title" style="margin-top:24px">Draft Picks</div>';
+  // Field status
+  if (S.fieldLoaded) {
+    const drafted = S.golfers.length;
+    const total = S.mastersField.length;
+    html += `<div style="font-size:12px;color:var(--text2);margin:12px 0 4px;padding-left:4px">Masters Feld: ${total} Spieler geladen &middot; ${drafted} gedraftet</div>`;
+  }
+
+  html += '<div class="section-title" style="margin-top:16px">Draft Picks</div>';
   for (let r = 1; r <= 5; r++) {
     const roundPicks = S.golfers.filter(g => g.draft_round === r).sort((a, b) => a.draft_pick - b.draft_pick);
     html += `<div class="draft-round-label">Runde ${r} ${r % 2 === 0 ? '(Reverse)' : ''}</div>`;
@@ -871,7 +891,7 @@ async function addParticipant() {
 }
 
 async function removeParticipant(id) {
-  if (!confirm('Teilnehmer wirklich entfernen?')) return;
+  if (!confirm('Mitspieler wirklich entfernen?')) return;
   await sb.from('masters_participants').delete().eq('id', id);
   await loadAll();
   render();
@@ -915,6 +935,8 @@ function openDraftPickModal() {
   }
 
   document.getElementById('inputGolferName').value = '';
+  document.getElementById('inputGolferSearch').value = '';
+  filterFieldList();
   openModal('modalDraftPick');
 }
 
@@ -1023,6 +1045,82 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+/* ===================== Masters Field (ESPN) ===================== */
+async function fetchMastersField() {
+  try {
+    const resp = await fetch(ESPN_GOLF_URL);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    const events = json.events || [];
+    let evt = events.find(e =>
+      e.name && (e.name.toLowerCase().includes('masters') || e.name.toLowerCase().includes('augusta'))
+    );
+    if (!evt && events.length > 0) evt = events[0];
+    if (!evt) return;
+
+    const comp = (evt.competitions || [])[0];
+    if (!comp) return;
+
+    const field = [];
+    for (const c of (comp.competitors || [])) {
+      const athlete = c.athlete || {};
+      const name = athlete.displayName || athlete.shortName || '';
+      if (!name) continue;
+      const country = athlete.flag?.alt || '';
+      field.push({ name, country });
+    }
+    field.sort((a, b) => a.name.localeCompare(b.name));
+    S.mastersField = field;
+    S.fieldLoaded = true;
+  } catch (err) {
+    console.warn('Field fetch failed:', err);
+  }
+}
+
+function getAvailableField() {
+  const drafted = new Set(S.golfers.map(g => normalizeName(g.name)));
+  return S.mastersField.map(p => ({
+    ...p,
+    isDrafted: drafted.has(normalizeName(p.name))
+  }));
+}
+
+function filterFieldList() {
+  const query = document.getElementById('inputGolferSearch').value.toLowerCase().trim();
+  const list = document.getElementById('fieldList');
+  const available = getAvailableField();
+  const selected = document.getElementById('inputGolferName').value;
+
+  let filtered = available;
+  if (query) {
+    filtered = available.filter(p => p.name.toLowerCase().includes(query));
+  }
+
+  if (filtered.length === 0 && query) {
+    // Allow manual entry if not found in field
+    list.innerHTML = `<div class="field-item" onclick="selectFieldPlayer('${esc(query)}',this)"
+      style="font-style:italic;color:var(--text2)">"${esc(query)}" manuell eingeben</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const sel = normalizeName(p.name) === normalizeName(selected) ? 'selected' : '';
+    const dr = p.isDrafted ? 'drafted' : '';
+    const flag = p.country ? `<span class="field-status">${p.country}</span>` : '';
+    const draftLabel = p.isDrafted ? '<span class="field-status">bereits gedraftet</span>' : '';
+    return `<div class="field-item ${sel} ${dr}" onclick="selectFieldPlayer('${esc(p.name)}',this)">
+      ${esc(p.name)}${flag}${draftLabel}</div>`;
+  }).join('');
+}
+
+function selectFieldPlayer(name, el) {
+  document.getElementById('inputGolferName').value = name;
+  document.getElementById('inputGolferSearch').value = name;
+  // Update selection UI
+  document.querySelectorAll('#fieldList .field-item').forEach(item => item.classList.remove('selected'));
+  if (el) el.classList.add('selected');
 }
 
 /* ===================== Live Scoring (ESPN) ===================== */
@@ -1163,9 +1261,9 @@ function updateLiveBadge(active) {
 }
 
 function startLiveRefresh() {
+  fetchMastersField();
   fetchLiveScores();
   S.liveTimer = setInterval(fetchLiveScores, LIVE_REFRESH_MS);
-  // Update badge time display every 30s
   setInterval(() => updateLiveBadge(S.liveActive), 30000);
 }
 
