@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Masters Pool">
-<meta name="theme-color" content="#0B3D0B">
+<meta name="theme-color" content="#F5EFE0">
 <title>Masters Pool 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,12 +15,14 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0B3D0B;--bg2:#0D4A0D;--bg3:#0F520F;
-  --card:rgba(18,75,18,.55);--card2:rgba(25,90,25,.45);--card-solid:#14541A;
-  --gold:#C8A951;--gold2:#D4B96A;--gold-dim:rgba(200,169,81,.2);
-  --text:#F5F0E8;--text2:#A8C4A8;--text3:#6B8F6B;
-  --red:#D4564E;--red-bg:rgba(212,86,78,.12);
-  --birdie:#5EDB6D;--bogey:#E87461;--eagle:#3BA4F5;
+  --bg:#F5EFE0;--bg2:#EDE7D8;--bg3:#E6DFCF;
+  --card:#FFFFFF;--card2:#F9F5EC;--card-solid:#FFFFFF;
+  --green:#006747;--green2:#00845C;--green-dim:rgba(0,103,71,.08);
+  --gold:#C8A951;--gold2:#B8993F;--gold-dim:rgba(200,169,81,.12);
+  --text:#1A2E1A;--text2:#5C6E5C;--text3:#8FA08F;
+  --red:#C0392B;--red-bg:rgba(192,57,43,.08);
+  --birdie:#006747;--bogey:#C0392B;--eagle:#2471A3;
+  --border:rgba(0,103,71,.1);
   --radius:16px;--radius-sm:10px;
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
@@ -36,28 +38,27 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 /* ===== Background Texture ===== */
 body::before{content:'';position:fixed;inset:0;background:
-  radial-gradient(ellipse at 20% 0%,rgba(200,169,81,.06) 0%,transparent 50%),
-  radial-gradient(ellipse at 80% 100%,rgba(200,169,81,.04) 0%,transparent 50%),
-  radial-gradient(ellipse at 50% 50%,rgba(0,40,0,.3) 0%,transparent 70%);
+  radial-gradient(ellipse at 20% 0%,rgba(0,103,71,.03) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 100%,rgba(200,169,81,.04) 0%,transparent 50%);
   pointer-events:none;z-index:0}
 
 /* ===== App Shell ===== */
 #app{display:flex;flex-direction:column;height:100%;max-width:500px;margin:0 auto;position:relative;overflow:hidden;z-index:1}
-@media(min-width:501px){#app{border-left:1px solid rgba(200,169,81,.1);border-right:1px solid rgba(200,169,81,.1)}}
+@media(min-width:501px){#app{border-left:1px solid var(--border);border-right:1px solid var(--border)}}
 .safe-top{height:var(--safe-top);min-height:0;flex-shrink:0}
 
 /* ===== Header ===== */
-.app-header{padding:16px 20px 12px;text-align:center;flex-shrink:0;position:relative}
-.app-header::after{content:'';position:absolute;bottom:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
-.header-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--gold);letter-spacing:3px;text-transform:uppercase;line-height:1.1}
-.header-sub{font-size:12px;color:var(--text2);letter-spacing:4px;text-transform:uppercase;margin-top:2px;font-weight:300}
-.live-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-body);font-size:10px;font-weight:600;color:var(--birdie);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--birdie);animation:pulse-live 1.5s ease-in-out infinite}
+.app-header{padding:20px 20px 14px;text-align:center;flex-shrink:0;position:relative;background:var(--green);color:#fff}
+.app-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold))}
+.header-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:#fff;letter-spacing:3px;text-transform:uppercase;line-height:1.1}
+.header-sub{font-size:12px;color:rgba(255,255,255,.7);letter-spacing:4px;text-transform:uppercase;margin-top:2px;font-weight:300}
+.live-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-body);font-size:10px;font-weight:600;color:var(--gold);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse-live 1.5s ease-in-out infinite}
 @keyframes pulse-live{0%,100%{opacity:1}50%{opacity:.3}}
-.live-badge.stale{color:var(--text3)}
-.live-badge.stale .live-dot{background:var(--text3);animation:none}
-.header-admin{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .2s}
-.header-admin:hover,.header-admin.active{color:var(--gold);background:var(--gold-dim)}
+.live-badge.stale{color:rgba(255,255,255,.4)}
+.live-badge.stale .live-dot{background:rgba(255,255,255,.4);animation:none}
+.header-admin{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);transition:all .2s}
+.header-admin:hover,.header-admin.active{color:var(--gold);background:rgba(255,255,255,.1)}
 .header-admin svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
 
 /* ===== Views ===== */
@@ -66,58 +67,58 @@ body::before{content:'';position:fixed;inset:0;background:
 .view.active{opacity:1;transform:translateY(0);pointer-events:auto}
 
 /* ===== Tab Bar ===== */
-.tab-bar{position:absolute;bottom:0;left:0;right:0;height:calc(var(--tab-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:rgba(8,40,8,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(200,169,81,.1);display:flex;z-index:100}
+.tab-bar{position:absolute;bottom:0;left:0;right:0;height:calc(var(--tab-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:rgba(255,255,255,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;z-index:100}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text3);font-size:10px;font-weight:500;transition:color .2s;padding:6px 0}
 .tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
-.tab.active{color:var(--gold)}
+.tab.active{color:var(--green)}
 .tab.active svg{transform:scale(1.08)}
 .tab.hidden{display:none}
 
 /* ===== Cards ===== */
-.card{background:var(--card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(200,169,81,.08);border-radius:var(--radius);padding:16px;margin-bottom:12px;transition:transform .15s}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .card:active{transform:scale(.985)}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .card-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--text)}
 
 /* ===== Leaderboard ===== */
 .stats-row{display:flex;gap:10px;margin-bottom:16px}
-.stat-card{flex:1;background:var(--card);border:1px solid rgba(200,169,81,.08);border-radius:var(--radius-sm);padding:12px;text-align:center}
-.stat-val{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
+.stat-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat-val{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--green)}
 .stat-label{font-size:11px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
 
-.lb-entry{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid rgba(200,169,81,.06);border-radius:var(--radius);margin-bottom:8px;transition:transform .15s}
+.lb-entry{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .lb-entry:active{transform:scale(.985)}
 .lb-entry.eliminated{opacity:.45}
-.lb-entry.rank-1{border-color:rgba(200,169,81,.25);background:linear-gradient(135deg,rgba(200,169,81,.1),var(--card))}
+.lb-entry.rank-1{border-color:var(--gold);background:linear-gradient(135deg,rgba(200,169,81,.08),#fff)}
 
-.lb-rank{width:32px;text-align:center;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text2);flex-shrink:0}
+.lb-rank{width:32px;text-align:center;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text3);flex-shrink:0}
 .lb-entry.rank-1 .lb-rank{color:var(--gold);font-size:22px}
 
 .lb-info{flex:1;min-width:0}
 .lb-name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lb-detail{font-size:11px;color:var(--text2);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
-.lb-detail span{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px}
+.lb-detail span{background:var(--bg2);padding:1px 6px;border-radius:4px}
 
 .lb-score{text-align:right;flex-shrink:0}
 .lb-total{font-family:var(--font-display);font-size:24px;font-weight:700}
-.lb-total.under{color:var(--birdie)}
+.lb-total.under{color:var(--green)}
 .lb-total.over{color:var(--bogey)}
 .lb-total.even{color:var(--text)}
-.lb-bonus{font-size:10px;color:var(--gold);margin-top:1px}
+.lb-bonus{font-size:10px;color:var(--gold2);margin-top:1px}
 
 .eliminated-badge{display:inline-flex;align-items:center;gap:3px;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:6px}
 
 /* ===== Teams ===== */
 .team-selector{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch}
-.team-pill{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;background:var(--card);border:1px solid rgba(200,169,81,.08);color:var(--text2);transition:all .2s;flex-shrink:0}
-.team-pill.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+.team-pill{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;background:var(--card);border:1px solid var(--border);color:var(--text2);transition:all .2s;flex-shrink:0}
+.team-pill.active{background:var(--green);border-color:var(--green);color:#fff}
 
-.golfer-row{display:flex;align-items:center;padding:12px 14px;background:var(--card);border:1px solid rgba(200,169,81,.06);border-radius:var(--radius-sm);margin-bottom:8px}
+.golfer-row{display:flex;align-items:center;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .golfer-row.cut{opacity:.4;text-decoration:line-through}
-.golfer-row.counting{border-left:3px solid var(--gold)}
+.golfer-row.counting{border-left:3px solid var(--green)}
 .golfer-name{flex:1;font-weight:500;font-size:14px}
 .golfer-rounds{display:flex;gap:6px}
-.golfer-rd{width:36px;text-align:center;font-size:12px;font-weight:500;padding:4px 0;border-radius:6px;background:rgba(255,255,255,.04)}
+.golfer-rd{width:36px;text-align:center;font-size:12px;font-weight:500;padding:4px 0;border-radius:6px;background:var(--bg2)}
 .golfer-rd.birdie{color:var(--birdie)}
 .golfer-rd.bogey{color:var(--bogey)}
 .golfer-rd.eagle{color:var(--eagle)}
@@ -126,77 +127,77 @@ body::before{content:'';position:fixed;inset:0;background:
 .round-headers span{width:36px;text-align:center}
 
 /* ===== Draft ===== */
-.draft-pick{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid rgba(200,169,81,.06);border-radius:var(--radius-sm);margin-bottom:6px}
-.draft-num{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--gold-dim);color:var(--gold);border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0}
+.draft-pick{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.draft-num{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--green);color:#fff;border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0}
 .draft-golfer{flex:1;font-weight:500;font-size:14px}
 .draft-team{font-size:12px;color:var(--text2);text-align:right}
-.draft-round-label{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--gold);padding:12px 0 6px;letter-spacing:1px}
+.draft-round-label{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--green);padding:12px 0 6px;letter-spacing:1px}
 .draft-empty{color:var(--text3);font-style:italic}
 
 /* ===== Scoring (Admin) ===== */
 .round-tabs{display:flex;gap:6px;margin-bottom:16px}
-.round-tab{flex:1;padding:10px;text-align:center;border-radius:var(--radius-sm);font-size:13px;font-weight:600;background:var(--card);border:1px solid rgba(200,169,81,.06);color:var(--text2);transition:all .2s}
-.round-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+.round-tab{flex:1;padding:10px;text-align:center;border-radius:var(--radius-sm);font-size:13px;font-weight:600;background:var(--card);border:1px solid var(--border);color:var(--text2);transition:all .2s}
+.round-tab.active{background:var(--green);border-color:var(--green);color:#fff}
 .score-group{margin-bottom:20px}
 .score-group-title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;padding-left:4px}
-.score-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid rgba(200,169,81,.06);border-radius:var(--radius-sm);margin-bottom:6px}
+.score-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .score-row .golfer-name{flex:1;font-size:14px}
-.score-input{width:56px;padding:8px;text-align:center;background:var(--bg2);border:1px solid rgba(200,169,81,.12);border-radius:8px;color:var(--text);font-size:15px;font-weight:600}
-.score-input:focus{border-color:var(--gold)}
-.cut-toggle{width:36px;height:20px;border-radius:10px;background:var(--birdie);position:relative;transition:background .2s;flex-shrink:0;cursor:pointer}
+.score-input{width:56px;padding:8px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;font-weight:600}
+.score-input:focus{border-color:var(--green)}
+.cut-toggle{width:36px;height:20px;border-radius:10px;background:var(--green);position:relative;transition:background .2s;flex-shrink:0;cursor:pointer}
 .cut-toggle.missed{background:var(--red)}
 .cut-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
 .cut-toggle.missed::after{transform:translateX(16px)}
 
 /* ===== Bonus Section ===== */
-.bonus-section{margin-top:20px;padding:16px;background:var(--card);border:1px solid rgba(200,169,81,.12);border-radius:var(--radius)}
-.bonus-title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--gold);margin-bottom:12px}
+.bonus-section{margin-top:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.bonus-title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--green);margin-bottom:12px}
 .bonus-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.bonus-row select{flex:1;padding:10px 12px;background:var(--bg2);border:1px solid rgba(200,169,81,.12);border-radius:8px;color:var(--text);font-size:14px;-webkit-appearance:none;appearance:none}
+.bonus-row select{flex:1;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;-webkit-appearance:none;appearance:none}
 .bonus-row .btn-sm{white-space:nowrap}
 
 /* ===== Rules ===== */
 .rule-section{margin-bottom:20px}
-.rule-heading{font-family:var(--font-display);font-size:20px;font-weight:600;color:var(--gold);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(200,169,81,.15)}
+.rule-heading{font-family:var(--font-display);font-size:20px;font-weight:600;color:var(--green);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gold)}
 .rule-item{display:flex;gap:10px;padding:8px 0;font-size:14px;color:var(--text2);line-height:1.5}
-.rule-bullet{color:var(--gold);flex-shrink:0;font-size:16px}
+.rule-bullet{color:var(--green);flex-shrink:0;font-size:16px}
 .rule-highlight{color:var(--text);font-weight:500}
 .payout-bar{display:flex;gap:2px;margin-top:8px;height:32px;border-radius:8px;overflow:hidden}
-.payout-seg{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--bg)}
-.payout-1{background:var(--gold);flex:6}
-.payout-2{background:var(--text2);flex:3}
-.payout-3{background:var(--text3);flex:1}
+.payout-seg{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff}
+.payout-1{background:var(--green);flex:6}
+.payout-2{background:var(--gold);flex:3;color:var(--text)}
+.payout-3{background:var(--text3);flex:1;color:#fff}
 
 /* ===== Buttons ===== */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:var(--radius-sm);font-weight:600;font-size:15px;transition:all .15s;min-height:44px}
-.btn-primary{background:var(--gold);color:var(--bg)}
-.btn-primary:active{background:var(--gold2);transform:scale(.97)}
-.btn-secondary{background:var(--card2);color:var(--text);border:1px solid rgba(200,169,81,.1)}
-.btn-secondary:active{transform:scale(.97)}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:active{background:var(--green2);transform:scale(.97)}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:active{transform:scale(.97);background:var(--bg2)}
 .btn-danger{background:var(--red-bg);color:var(--red)}
 .btn-sm{padding:8px 14px;font-size:12px;border-radius:8px}
 .btn-block{width:100%}
 
 /* ===== Modal ===== */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{width:100%;max-width:500px;max-height:85vh;background:var(--bg2);border-radius:20px 20px 0 0;padding:8px 20px calc(var(--safe-bottom) + 20px);overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.modal{width:100%;max-width:500px;max-height:85vh;background:var(--card);border-radius:20px 20px 0 0;padding:8px 20px calc(var(--safe-bottom) + 20px);overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
 .modal-overlay.open .modal{transform:translateY(0)}
-.modal-handle{width:36px;height:4px;background:rgba(200,169,81,.2);border-radius:2px;margin:8px auto 16px}
-.modal h2{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold);margin-bottom:20px}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:8px auto 16px}
+.modal h2{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--green);margin-bottom:20px}
 .modal .form-group{margin-bottom:16px}
 .modal label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
-.modal .input{width:100%;padding:12px 16px;background:var(--bg);border:1px solid rgba(200,169,81,.12);border-radius:var(--radius-sm);color:var(--text);font-size:15px;min-height:44px}
-.modal .input:focus{border-color:var(--gold)}
+.modal .input{width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:15px;min-height:44px}
+.modal .input:focus{border-color:var(--green)}
 .modal .input::placeholder{color:var(--text3)}
 .modal select.input{-webkit-appearance:none;appearance:none}
 .modal .actions{display:flex;gap:12px;margin-top:24px}
 .modal .actions .btn{flex:1}
 
 /* ===== FAB ===== */
-.fab{position:absolute;bottom:calc(var(--tab-h) + var(--safe-bottom) + 20px);right:20px;width:52px;height:52px;border-radius:50%;background:var(--gold);color:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(200,169,81,.35);z-index:50;transition:transform .2s}
+.fab{position:absolute;bottom:calc(var(--tab-h) + var(--safe-bottom) + 20px);right:20px;width:52px;height:52px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,103,71,.3);z-index:50;transition:transform .2s}
 .fab:active{transform:scale(.9)}
-.fab svg{width:24px;height:24px;stroke:var(--bg);stroke-width:2.5;fill:none}
+.fab svg{width:24px;height:24px;stroke:#fff;stroke-width:2.5;fill:none}
 
 /* ===== Empty ===== */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center}
@@ -208,20 +209,20 @@ body::before{content:'';position:fixed;inset:0;background:
 .auth-form .form-group{margin-bottom:14px}
 
 /* ===== Spinner ===== */
-.spinner{width:24px;height:24px;border:3px solid var(--card2);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;margin:24px auto}
+.spinner{width:24px;height:24px;border:3px solid var(--bg2);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin:24px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ===== Section title ===== */
-.section-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--gold);margin:16px 0 10px;letter-spacing:.5px}
+.section-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--green);margin:16px 0 10px;letter-spacing:.5px}
 
 /* ===== Toast ===== */
-.toast{position:fixed;top:calc(var(--safe-top) + 16px);left:50%;transform:translateX(-50%) translateY(-100px);background:var(--card-solid);border:1px solid rgba(200,169,81,.2);color:var(--text);padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;z-index:300;transition:transform .3s cubic-bezier(.32,.72,0,1);white-space:nowrap}
+.toast{position:fixed;top:calc(var(--safe-top) + 16px);left:50%;transform:translateX(-50%) translateY(-100px);background:var(--green);color:#fff;padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;z-index:300;transition:transform .3s cubic-bezier(.32,.72,0,1);white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.15)}
 .toast.show{transform:translateX(-50%) translateY(0)}
 
 /* ===== Participant order list ===== */
 .order-list{counter-reset:order}
-.order-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid rgba(200,169,81,.06);border-radius:var(--radius-sm);margin-bottom:6px}
-.order-item .order-num{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--gold-dim);color:var(--gold);border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0}
+.order-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.order-item .order-num{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--green);color:#fff;border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0}
 .order-item .order-name{flex:1;font-weight:500;font-size:14px}
 .order-item .order-actions{display:flex;gap:4px}
 .order-item .order-actions button{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--text3);transition:all .15s}
@@ -620,7 +621,7 @@ function renderLeaderboard() {
     // Count how many golfers have live match
     const teamGolfers = S.golfers.filter(g => g.participant_id === t.id);
     const liveCount = teamGolfers.filter(g => g._liveMatched).length;
-    const liveInfo = S.liveActive && liveCount > 0 ? `<span style="color:var(--birdie)">${liveCount}/5 live</span>` : '';
+    const liveInfo = S.liveActive && liveCount > 0 ? `<span style="color:var(--green)">${liveCount}/5 live</span>` : '';
     const bonusHtml = t.bonus > 0 ? `<div class="lb-bonus">Bonus: -${t.bonus}</div>` : '';
     const elimBadge = t.isEliminated ? '<span class="eliminated-badge">ELIMINATED</span>' : '';
     return `<div class="${cls}">
@@ -684,7 +685,7 @@ function renderTeams() {
       const rel = sc !== null ? sc - PAR : null;
       const cls = scoreClass(rel);
       const counting = countingMap[g.id + '_' + r];
-      return `<div class="golfer-rd ${cls}" style="${counting ? 'background:rgba(200,169,81,.15);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
+      return `<div class="golfer-rd ${cls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
     }).join('');
     const thruHtml = (g._live && g._live.thru && !isCut) ? `<div style="font-size:10px;color:var(--text3);margin-left:6px;white-space:nowrap">${g._live.thru}</div>` : '';
     return `<div class="golfer-row ${cutCls}">
@@ -700,10 +701,10 @@ function renderTeams() {
   const total = calcTeamTotal(S.selectedTeam);
   const bonus = getTeamBonusTotal(S.selectedTeam);
   const elim = checkEliminated(S.selectedTeam);
-  html += `<div style="margin-top:16px;padding:14px;background:var(--card);border:1px solid rgba(200,169,81,.12);border-radius:var(--radius);text-align:center">
+  html += `<div style="margin-top:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
     <div style="font-family:var(--font-display);font-size:14px;color:var(--text2);margin-bottom:4px">Team Score</div>
-    <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:${total !== null && total < 0 ? 'var(--birdie)' : total > 0 ? 'var(--bogey)' : 'var(--text)'}">${fmtScore(total)}</div>
-    ${bonus > 0 ? `<div style="font-size:12px;color:var(--gold);margin-top:4px">inkl. Bonus -${bonus}</div>` : ''}
+    <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:${total !== null && total < 0 ? 'var(--green)' : total > 0 ? 'var(--bogey)' : 'var(--text)'}">${fmtScore(total)}</div>
+    ${bonus > 0 ? `<div style="font-size:12px;color:var(--gold2);margin-top:4px">inkl. Bonus -${bonus}</div>` : ''}
     ${elim ? '<div class="eliminated-badge" style="margin-top:8px">ELIMINATED</div>' : ''}
   </div>`;
 
@@ -797,7 +798,7 @@ function renderScoring() {
   const existingBonuses = S.bonuses.map(b => {
     const team = S.participants.find(p => p.id === b.participant_id);
     const label = b.bonus_type === 'par3_win' ? 'Par 3 Gewinner (-2)' : 'HIO (-1)';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:13px">${team ? esc(team.name) : '?'} — ${label}</span>
       <button class="btn btn-danger btn-sm" onclick="removeBonus('${b.id}')">Entfernen</button>
     </div>`;
