@@ -415,8 +415,8 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="modal-handle"></div>
     <h2>Bonus hinzuf&uuml;gen</h2>
     <div class="form-group">
-      <label>Team</label>
-      <select class="input" id="selectBonusTeam"></select>
+      <label>Golfer</label>
+      <select class="input" id="selectBonusGolfer"></select>
     </div>
     <div class="form-group">
       <label>Bonus Typ</label>
@@ -817,10 +817,13 @@ function renderScoring() {
     <div class="bonus-title">Par 3 Contest Bonuses</div>`;
 
   const existingBonuses = S.bonuses.map(b => {
+    const golfer = S.golfers.find(g => g.id === b.golfer_id);
     const team = S.participants.find(p => p.id === b.participant_id);
     const label = b.bonus_type === 'par3_win' ? 'Par 3 Gewinner (-2)' : 'HIO (-1)';
+    const who = golfer ? esc(golfer.name) : (team ? esc(team.name) : '?');
+    const teamName = golfer && team ? ` <span style="color:var(--text3)">(${esc(team.name)})</span>` : '';
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:13px">${team ? esc(team.name) : '?'} — ${label}</span>
+      <span style="font-size:13px">${who}${teamName} — ${label}</span>
       <button class="btn btn-danger btn-sm" onclick="removeBonus('${b.id}')">Entfernen</button>
     </div>`;
   }).join('');
@@ -990,22 +993,37 @@ function setScoringRound(r) {
 }
 
 function openBonusModal() {
-  const sel = document.getElementById('selectBonusTeam');
-  sel.innerHTML = S.participants.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  const sel = document.getElementById('selectBonusGolfer');
+  // Show all drafted golfers grouped by team
+  let opts = '';
+  for (const p of S.participants) {
+    const teamGolfers = S.golfers.filter(g => g.participant_id === p.id);
+    if (teamGolfers.length === 0) continue;
+    opts += `<optgroup label="${esc(p.name)}">`;
+    opts += teamGolfers.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
+    opts += '</optgroup>';
+  }
+  sel.innerHTML = opts;
   document.getElementById('selectBonusType').value = 'par3_win';
   openModal('modalBonus');
 }
 
 async function addBonus() {
-  const pid = document.getElementById('selectBonusTeam').value;
+  const golferId = document.getElementById('selectBonusGolfer').value;
   const type = document.getElementById('selectBonusType').value;
   const shots = type === 'par3_win' ? 2 : 1;
-  const { error } = await sb.from('masters_bonuses').insert({ user_id: S.userId, participant_id: pid, bonus_type: type, shots });
+  // Find participant from golfer
+  const golfer = S.golfers.find(g => g.id === golferId);
+  const pid = golfer ? golfer.participant_id : null;
+  const { error } = await sb.from('masters_bonuses').insert({
+    user_id: S.userId, golfer_id: golferId, participant_id: pid,
+    bonus_type: type, shots
+  });
   if (error) { showToast('Fehler: ' + error.message); return; }
   closeModal('modalBonus');
   await loadAll();
   render();
-  showToast('Bonus hinzugefügt');
+  showToast('Bonus für ' + (golfer ? golfer.name : '') + ' hinzugefügt');
 }
 
 async function removeBonus(id) {
