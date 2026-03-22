@@ -726,20 +726,21 @@ function renderTeams() {
 
 function renderDraft() {
   const c = document.getElementById('draftContent');
-  if (S.participants.length === 0) {
-    c.innerHTML = `<div class="empty"><div class="empty-icon">&#127183;</div><h3>Draft Board</h3>
-      <p>F&uuml;ge zuerst deine Mitspieler hinzu</p></div>`;
-    return;
-  }
-
   let html = '';
 
-  // Participants + Draft Order
+  // Admin buttons — always show when admin
   if (S.isAdmin) {
     html += `<div style="display:flex;gap:8px;margin-bottom:16px">
       <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openModal('modalParticipant')">+ Mitspieler</button>
       <button class="btn btn-primary btn-sm" style="flex:1" onclick="randomizeDraftOrder()">&#127922; Auslosen</button>
     </div>`;
+  }
+
+  if (S.participants.length === 0) {
+    html += `<div class="empty"><div class="empty-icon">&#127183;</div><h3>Draft Board</h3>
+      <p>F&uuml;ge zuerst deine Mitspieler hinzu</p></div>`;
+    c.innerHTML = html;
+    return;
   }
 
   html += '<div class="section-title">Mitspieler &amp; Draft Reihenfolge</div>';
