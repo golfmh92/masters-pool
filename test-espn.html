@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESPN Live Test – Valspar</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #111; padding: 16px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .meta { font-size: 12px; color: #666; margin-bottom: 16px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+  .badge.live { background: #d4edda; color: #155724; }
+  .badge.stale { background: #f8d7da; color: #721c24; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1); font-size: 13px; }
+  th { background: #1a3a2a; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9f9f9; }
+  .cut { opacity: 0.4; text-decoration: line-through; }
+  .r { width: 40px; text-align: center; }
+  .pos { width: 36px; font-weight: 700; color: #888; }
+  .score-neg { color: #006747; font-weight: 600; }
+  .score-pos { color: #c0392b; }
+  .score-e { color: #888; }
+  .thru { font-size: 11px; color: #999; }
+  #status { margin-bottom: 12px; font-size: 13px; color: #444; }
+  .section { margin-bottom: 24px; }
+  .section h2 { font-size: 14px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .raw { background: #fff; border-radius: 8px; padding: 12px; font-size: 11px; color: #333; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+</style>
+</head>
+<body>
+
+<h1>ESPN Live Test <span id="eventName">…</span><span id="liveBadge" class="badge"></span></h1>
+<div class="meta" id="meta">Lade Daten…</div>
+
+<div class="section">
+  <h2>Leaderboard (<span id="count">–</span> Spieler)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="pos">Pos</th>
+        <th>Spieler</th>
+        <th style="text-align:right">Total</th>
+        <th class="r">R1</th>
+        <th class="r">R2</th>
+        <th class="r">R3</th>
+        <th class="r">R4</th>
+        <th class="thru">Thru</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Raw ESPN Response (erste 3 Spieler)</h2>
+  <div class="raw" id="raw">–</div>
+</div>
+
+<script>
+const ESPN_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+
+function fmtScore(val) {
+  if (val === null || val === undefined) return '–';
+  if (val === 0) return '<span class="score-e">E</span>';
+  if (val < 0) return `<span class="score-neg">${val}</span>`;
+  return `<span class="score-pos">+${val}</span>`;
+}
+
+function fmtRound(val) {
+  if (!val || val <= 0) return '<span style="color:#ccc">–</span>';
+  return val;
+}
+
+async function load() {
+  try {
+    const resp = await fetch(ESPN_URL);
+    const json = await resp.json();
+    const events = json.events || [];
+
+    let evt = events.find(e => e.name && (e.name.toLowerCase().includes('masters') || e.name.toLowerCase().includes('augusta')));
+    if (!evt && events.length > 0) evt = events[0];
+    if (!evt) { document.getElementById('meta').textContent = 'Kein Turnier gefunden'; return; }
+
+    document.getElementById('eventName').textContent = evt.name;
+
+    const comp = (evt.competitions || [])[0];
+    if (!comp) { document.getElementById('meta').textContent = 'Keine Competition-Daten'; return; }
+
+    const competitors = comp.competitors || [];
+    document.getElementById('count').textContent = competitors.length;
+
+    const now = new Date();
+    document.getElementById('meta').textContent = `Letzte Aktualisierung: ${now.toLocaleTimeString('de-DE')}`;
+    const badge = document.getElementById('liveBadge');
+    badge.textContent = competitors.length > 0 ? 'LIVE' : 'KEIN FELD';
+    badge.className = 'badge ' + (competitors.length > 0 ? 'live' : 'stale');
+
+    // Sort by score
+    const sorted = [...competitors].sort((a, b) => (parseInt(a.score) || 99) - (parseInt(b.score) || 99));
+
+    let tbody = '';
+    let pos = 0;
+    let lastScore = null;
+    for (const c of sorted) {
+      pos++;
+      const score = parseInt(c.score) || 0;
+      const posLabel = score === lastScore ? 'T' + (pos - 1) : pos;
+      lastScore = score;
+
+      const athlete = c.athlete || {};
+      const name = athlete.displayName || '–';
+      const ls = c.linescores || [];
+      const r1 = ls[0]?.value;
+      const r2 = ls[1]?.value;
+      const r3 = ls[2]?.value;
+      const r4 = ls[3]?.value;
+
+      const status = c.status || {};
+      const thru = status.displayValue || '';
+      const isCut = status.type?.name === 'cut';
+
+      tbody += `<tr class="${isCut ? 'cut' : ''}">
+        <td class="pos">${posLabel}</td>
+        <td>${name}</td>
+        <td style="text-align:right">${fmtScore(score)}</td>
+        <td class="r">${fmtRound(r1)}</td>
+        <td class="r">${fmtRound(r2)}</td>
+        <td class="r">${fmtRound(r3)}</td>
+        <td class="r">${fmtRound(r4)}</td>
+        <td class="thru">${thru}</td>
+      </tr>`;
+    }
+    document.getElementById('tbody').innerHTML = tbody;
+
+    // Raw debug für erste 3
+    const raw = sorted.slice(0, 3).map(c => ({
+      name: (c.athlete || {}).displayName,
+      score: c.score,
+      linescores: (c.linescores || []).map(l => l.value),
+      status: c.status
+    }));
+    document.getElementById('raw').textContent = JSON.stringify(raw, null, 2);
+
+  } catch(err) {
+    document.getElementById('meta').textContent = 'Fehler: ' + err.message;
+  }
+}
+
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
