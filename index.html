@@ -532,6 +532,8 @@ let S = {
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) setAdmin(true, session.user.id);
+  // Auto-admin for testing
+  setAdmin(true, session?.user?.id || 'test-admin');
   // Restore identity from localStorage
   S.myName = localStorage.getItem('masters_pool_identity') || '';
   await loadAll();
