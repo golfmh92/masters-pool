@@ -156,6 +156,16 @@ body::before{content:'';position:fixed;inset:0;background:
 .golfer-rd.bogey{color:var(--bogey)}
 .golfer-rd.eagle{color:var(--eagle)}
 .golfer-cut{font-size:10px;color:var(--red);font-weight:600;margin-left:8px}
+.scorecard{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.scorecard th{background:var(--bg2);padding:6px 4px;text-align:center;font-weight:600;color:var(--text2);font-size:10px}
+.scorecard td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--border)}
+.scorecard .hole-num{color:var(--text3);font-size:10px}
+.scorecard .sc-birdie{color:#fff;background:var(--birdie);border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-eagle{color:#fff;background:var(--eagle);border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-bogey{color:#fff;background:var(--bogey);border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-par{color:var(--text)}
+.scorecard .sc-dbl{color:#fff;background:#8B0000;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard-round{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--green);margin:12px 0 6px;letter-spacing:1px}
 .round-headers{display:flex;justify-content:flex-end;gap:6px;padding:0 14px 6px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
 .round-headers span{width:36px;text-align:center}
 
@@ -298,6 +308,14 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="header-avatar" id="avatarBtn" onclick="toggleIdentityDropdown()">
       <span id="avatarText">?</span>
     </div>
+    <div style="margin-bottom:4px">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="18" stroke="#C8A951" stroke-width="2" fill="none"/>
+        <path d="M20 6 C20 6 13 14 13 22 C13 28 16 32 20 34 C24 32 27 28 27 22 C27 14 20 6 20 6Z" fill="#C8A951" opacity="0.2" stroke="#C8A951" stroke-width="1.5"/>
+        <line x1="20" y1="8" x2="20" y2="20" stroke="#C8A951" stroke-width="1.5"/>
+        <path d="M20 8 L27 12 L20 14Z" fill="#C8A951"/>
+      </svg>
+    </div>
     <div class="header-title">The Masters Pool</div>
     <div class="header-sub">Augusta 2026</div>
     <div class="live-badge stale" id="liveBadge" style="display:none"><div class="live-dot"></div><span id="liveText">Live</span></div>
@@ -314,14 +332,9 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="view active" id="viewLeaderboard">
       <div class="stats-row" id="statsRow"></div>
       <div id="payoutSection"></div>
+      <input class="input" type="text" id="lbFilter" placeholder="Mitspieler suchen..." oninput="renderLeaderboard()" style="margin-bottom:12px">
       <div class="round-tabs" id="lbRoundTabs"></div>
       <div id="leaderboardList"></div>
-    </div>
-
-    <!-- TEAMS -->
-    <div class="view" id="viewTeams">
-      <input class="input" type="text" id="teamsFilter" placeholder="Mitspieler suchen..." oninput="renderTeams()" style="margin-bottom:12px">
-      <div id="teamsList"></div>
     </div>
 
     <!-- DRAFT -->
@@ -372,10 +385,6 @@ body::before{content:'';position:fixed;inset:0;background:
     <button class="tab active" data-tab="leaderboard" onclick="switchTab('leaderboard')">
       <svg viewBox="0 0 24 24"><path d="M8 21h8m-4-4v4M6 3h12l-1.5 6.5a2 2 0 01-2 1.5h-5a2 2 0 01-2-1.5L6 3z"/><circle cx="12" cy="13" r="2"/></svg>
       <span>Rangliste</span>
-    </button>
-    <button class="tab" data-tab="teams" onclick="switchTab('teams')">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
-      <span>Teams</span>
     </button>
     <button class="tab" data-tab="draft" onclick="switchTab('draft')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -486,6 +495,18 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="actions">
       <button class="btn btn-secondary" onclick="closeModal('modalBonus')">Abbrechen</button>
       <button class="btn btn-primary" onclick="addBonus()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scorecard Modal -->
+<div class="modal-overlay" id="modalScorecard">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="scorecardTitle">Scorecard</h2>
+    <div id="scorecardContent"></div>
+    <div class="actions">
+      <button class="btn btn-secondary btn-block" onclick="closeModal('modalScorecard')">Schließen</button>
     </div>
   </div>
 </div>
@@ -665,13 +686,38 @@ function getTeamBonusTotal(participantId) {
     .reduce((sum, b) => sum + b.shots, 0);
 }
 
+function calcTeamTotalLive(participantId) {
+  // During live play: use best N golfers' ESPN toPar for ranking
+  const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
+  const hasLive = teamGolfers.some(g => g._live);
+  if (!hasLive) return null;
+
+  // Determine how many count (simplified: best 4 before cut, best 3 after)
+  const hasCutData = teamGolfers.some(g => g._live && g._live.status === 'cut');
+  const count = hasCutData ? 3 : 4;
+
+  const toParValues = teamGolfers
+    .filter(g => g._live && g._live.status !== 'cut')
+    .map(g => g._live.toPar)
+    .filter(v => v !== undefined && v !== null);
+
+  if (toParValues.length === 0) return null;
+  toParValues.sort((a, b) => a - b);
+  const best = toParValues.slice(0, count);
+  return best.reduce((a, b) => a + b, 0);
+}
+
 function getRanking() {
   const teams = S.participants.map(p => {
     const eliminated = checkEliminated(p.id);
-    const total = calcTeamTotal(p.id);
+    const totalManual = calcTeamTotal(p.id);
+    const totalLive = calcTeamTotalLive(p.id);
+    // Prefer live total when available, fall back to manual
+    const total = totalLive !== null ? totalLive : totalManual;
     const bonus = getTeamBonusTotal(p.id);
     const rounds = [1,2,3,4].map(r => calcTeamRoundScore(p.id, r));
-    return { ...p, total, bonus, rounds, isEliminated: eliminated };
+    const isLive = totalLive !== null;
+    return { ...p, total, bonus, rounds, isEliminated: eliminated, isLive };
   });
   // Sort: non-eliminated first, then by total ascending, nulls last
   teams.sort((a, b) => {
@@ -707,7 +753,6 @@ function fmtMoney(val) {
 function render() {
   updateIdentityBar();
   renderLeaderboard();
-  renderTeams();
   renderDraft();
   if (S.isAdmin) renderScoring();
   updateFab();
@@ -836,6 +881,10 @@ function renderLeaderboard() {
   // Payout section
   renderPayouts(pot, ranking);
 
+  // Filter by search
+  const lbFilterVal = (document.getElementById('lbFilter')?.value || '').toLowerCase().trim();
+  const filteredRanking = lbFilterVal ? ranking.filter(t => t.name.toLowerCase().includes(lbFilterVal)) : ranking;
+
   // Round tabs
   const days = ['Gesamt','Do','Fr','Sa','So'];
   document.getElementById('lbRoundTabs').innerHTML = days.map((d, i) =>
@@ -850,7 +899,7 @@ function renderLeaderboard() {
   const rd = S.lbRound; // 0=total, 1-4=round
 
   let rank = 0;
-  document.getElementById('leaderboardList').innerHTML = ranking.map((t, i) => {
+  document.getElementById('leaderboardList').innerHTML = filteredRanking.map((t, i) => {
     if (!t.isEliminated) rank = i + 1;
     const greenJacket = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAQJlWElmTU0AKgAAAAgABwESAAMAAAABAAEAAAEaAAUAAAABAAAAYgEbAAUAAAABAAAAagEoAAMAAAABAAIAAAExAAIAAAA4AAAAcgE7AAIAAAAKAAAAqodpAAQAAAABAAAAtAAAAAAAAABgAAAAAQAAAGAAAAABQ2FudmEgZG9jPURBSEV0bnJwYkVBIHVzZXI9VUFGS1BkMWtfSkkgYnJhbmQ9R29sZmFyZWEzNgBtX2hhYmVsZXIAAAaQAAAHAAAABDAyMTCRAQAHAAAABAECAwCgAAAHAAAABDAxMDCgAQADAAAAAQABAACgAgAEAAAAAQAAAECgAwAEAAAAAQAAAEAAAAAAq2+2AAAAAAlwSFlzAAAOxAAADsQBlSsOGwAABjppVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDYuMC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyI+CiAgICAgICAgIDxleGlmOkNvbG9yU3BhY2U+NjU1MzU8L2V4aWY6Q29sb3JTcGFjZT4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjEwODA8L2V4aWY6UGl4ZWxYRGltZW5zaW9uPgogICAgICAgICA8ZXhpZjpFeGlmVmVyc2lvbj4wMjEwPC9leGlmOkV4aWZWZXJzaW9uPgogICAgICAgICA8ZXhpZjpGbGFzaFBpeFZlcnNpb24+MDEwMDwvZXhpZjpGbGFzaFBpeFZlcnNpb24+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xMzUwPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29tcG9uZW50c0NvbmZpZ3VyYXRpb24+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAgICA8cmRmOmxpPjE8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaT4yPC9yZGY6bGk+CiAgICAgICAgICAgICAgIDxyZGY6bGk+MzwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpPjA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L2V4aWY6Q29tcG9uZW50c0NvbmZpZ3VyYXRpb24+CiAgICAgICAgIDx4bXA6Q3JlYXRvclRvb2w+Q2FudmEgZG9jPURBSEV0bnJwYkVBIHVzZXI9VUFGS1BkMWtfSkkgYnJhbmQ9R29sZmFyZWEzNjwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpYUmVzb2x1dGlvbj45NjwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+OTY8L3RpZmY6WVJlc29sdXRpb24+CiAgICAgICAgIDxkYzp0aXRsZT4KICAgICAgICAgICAgPHJkZjpBbHQ+CiAgICAgICAgICAgICAgIDxyZGY6bGkgeG1sOmxhbmc9IngtZGVmYXVsdCI+RGVzaWduIG9obmUgVGl0ZWwgLSAxPC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOkFsdD4KICAgICAgICAgPC9kYzp0aXRsZT4KICAgICAgICAgPGRjOmNyZWF0b3I+CiAgICAgICAgICAgIDxyZGY6U2VxPgog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" width="30" height="30" style="object-fit:contain">`;
     const rankDisplay = t.isEliminated ? '&times;' : (rank === 1 ? greenJacket : rank);
@@ -893,7 +942,7 @@ function renderLeaderboard() {
 
       expandHtml = '<div class="lb-expand-inner">';
       if (rd === 0) {
-        expandHtml += '<div class="round-headers" style="padding-left:0"><span>R1</span><span>R2</span><span>R3</span><span>R4</span></div>';
+        expandHtml += '<div class="round-headers" style="padding-left:0"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:50px">Live</span></div>';
         expandHtml += teamGolfers.map(g => {
           const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
           const rounds = [1,2,3,4].map(r => {
@@ -903,9 +952,17 @@ function renderLeaderboard() {
             const counting = countingMap[g.id + '_' + r];
             return `<div class="golfer-rd ${sCls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
           }).join('');
+          // Live toPar + thru column
+          const liveHtml = g._live
+            ? `<div style="width:50px;text-align:center;font-size:11px;line-height:1.2">
+                <div style="font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</div>
+                ${g._live.thru && g._live.thru !== 'F' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
+              </div>`
+            : '<div style="width:50px"></div>';
           return `<div class="golfer-row ${isCut ? 'cut' : ''}">
-            <div class="golfer-name">${esc(g.name)}</div>
+            <div class="golfer-name" style="cursor:pointer;text-decoration:underline dotted var(--text3)" onclick="event.stopPropagation();showScorecard('${g.id}')">${esc(g.name)}</div>
             <div class="golfer-rounds">${rounds}</div>
+            ${liveHtml}
             ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
           </div>`;
         }).join('');
@@ -917,11 +974,17 @@ function renderLeaderboard() {
           const sCls = scoreClass(rel);
           const counting = countingMap[g.id + '_' + rd];
           const thru = (g._live && g._live.thru && !isCut) ? g._live.thru : '';
+          const hasRoundScore = sc !== null;
+          const liveInfo = (!hasRoundScore && g._live && !isCut)
+            ? `<span style="font-size:12px;font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</span>${thru ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${thru}</span>` : ''}`
+            : '';
           return `<div class="golfer-row ${isCut ? 'cut' : ''}">
-            <div class="golfer-name" style="${counting ? 'color:var(--green);font-weight:600' : ''}">${esc(g.name)}</div>
+            <div class="golfer-name" style="cursor:pointer;text-decoration:underline dotted var(--text3);${counting ? 'color:var(--green);font-weight:600' : ''}" onclick="event.stopPropagation();showScorecard('${g.id}')">${esc(g.name)}</div>
             <div style="display:flex;align-items:center;gap:6px">
-              ${thru ? `<span style="font-size:10px;color:var(--text3)">${thru}</span>` : ''}
-              <div class="golfer-rd ${sCls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? fmtScore(rel) : '—'}</div>
+              ${thru && hasRoundScore ? `<span style="font-size:10px;color:var(--text3)">${thru}</span>` : ''}
+              ${hasRoundScore ? `<div class="golfer-rd ${sCls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${fmtScore(rel)}</div>` : ''}
+              ${liveInfo}
+              ${!hasRoundScore && !liveInfo ? '<div class="golfer-rd">—</div>' : ''}
             </div>
             ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
           </div>`;
@@ -947,78 +1010,6 @@ function renderLeaderboard() {
       <div class="lb-expand">${expandHtml}</div>
     </div>`;
   }).join('');
-}
-
-function renderTeams() {
-  const container = document.getElementById('teamsList');
-
-  if (S.participants.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128101;</div><h3>Keine Mitspieler</h3></div>';
-    return;
-  }
-
-  const filterVal = (document.getElementById('teamsFilter')?.value || '').toLowerCase().trim();
-  const sorted = [...S.participants].sort((a, b) => a.name.localeCompare(b.name));
-  const filtered = filterVal ? sorted.filter(p => p.name.toLowerCase().includes(filterVal)) : sorted;
-
-  let html = '';
-  for (const p of filtered) {
-    const teamGolfers = S.golfers.filter(g => g.participant_id === p.id);
-    const total = calcTeamTotal(p.id);
-    const bonus = getTeamBonusTotal(p.id);
-    const elim = checkEliminated(p.id);
-    const totalCls = total !== null ? (total < 0 ? 'under' : total > 0 ? 'over' : 'even') : '';
-    const elimBadge = elim ? ' <span class="eliminated-badge">ELIMINATED</span>' : '';
-    const bonusHtml = bonus > 0 ? `<span style="font-size:11px;color:var(--gold2);font-family:var(--font-body);font-weight:400;margin-left:4px">(-${bonus})</span>` : '';
-
-    const isMine = S.myName && p.name === S.myName;
-    html += `<div class="team-card${isMine ? ' mine' : ''}${elim ? ' eliminated' : ''}">
-      <div class="team-card-header">
-        <div class="team-card-name">${esc(p.name)}${elimBadge}</div>
-        <div class="team-card-score ${totalCls}">${fmtScore(total)}${bonusHtml}</div>
-      </div>
-      <div class="team-card-body">`;
-
-    if (teamGolfers.length === 0) {
-      html += '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Noch keine Spieler gedraftet</div>';
-    } else {
-      // Determine counting golfers
-      const countingMap = {};
-      for (let r = 1; r <= 4; r++) {
-        const count = r <= 2 ? 4 : 3;
-        const withScores = teamGolfers
-          .filter(g => r < 3 || g.made_cut)
-          .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
-          .filter(x => x.score !== null)
-          .sort((a, b) => a.score - b.score);
-        withScores.slice(0, count).forEach(x => { countingMap[x.id + '_' + r] = true; });
-      }
-
-      html += `<div class="round-headers"><span>R1</span><span>R2</span><span>R3</span><span>R4</span></div>`;
-      html += teamGolfers.map(g => {
-        const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
-        const cutCls = isCut ? 'cut' : '';
-        const rounds = [1,2,3,4].map(r => {
-          const sc = getGolferScore(g.id, r);
-          const rel = sc !== null ? sc - PAR : null;
-          const cls = scoreClass(rel);
-          const counting = countingMap[g.id + '_' + r];
-          return `<div class="golfer-rd ${cls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
-        }).join('');
-        const thruHtml = (g._live && g._live.thru && !isCut) ? `<div style="font-size:10px;color:var(--text3);margin-left:6px;white-space:nowrap">${g._live.thru}</div>` : '';
-        return `<div class="golfer-row ${cutCls}">
-          <div class="golfer-name">${esc(g.name)}</div>
-          <div class="golfer-rounds">${rounds}</div>
-          ${thruHtml}
-          ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
-        </div>`;
-      }).join('');
-    }
-
-    html += '</div></div>';
-  }
-
-  container.innerHTML = html;
 }
 
 function renderDraft() {
@@ -1283,7 +1274,6 @@ async function saveScore(golferId, round, value) {
   }
   await loadAll();
   renderLeaderboard();
-  renderTeams();
 }
 
 async function toggleCut(golferId) {
@@ -1343,6 +1333,79 @@ async function removeBonus(id) {
   showToast('Bonus entfernt');
 }
 
+
+/* ===================== Scorecard ===================== */
+function showScorecard(golferId) {
+  const golfer = S.golfers.find(g => g.id === golferId);
+  if (!golfer || !golfer._live || !golfer._live.holes) {
+    showToast('Keine Loch-Daten verfügbar');
+    return;
+  }
+
+  document.getElementById('scorecardTitle').textContent = golfer.name;
+
+  let html = '';
+  const live = golfer._live;
+
+  for (let r = 1; r <= 4; r++) {
+    const roundHoles = live.holes['r' + r];
+    if (!roundHoles || roundHoles.length === 0) continue;
+
+    const roundScore = live['r' + r];
+    const roundToPar = roundScore ? roundScore - PAR : null;
+
+    html += `<div class="scorecard-round">Runde ${r}${roundToPar !== null ? ' (' + fmtScore(roundToPar) + ')' : ''}</div>`;
+
+    // Front 9
+    html += '<table class="scorecard"><tr><th>Loch</th>';
+    for (let h = 1; h <= 9; h++) html += `<th>${h}</th>`;
+    html += '<th>OUT</th></tr><tr><td class="hole-num">Score</td>';
+    let front9Total = 0;
+    for (let h = 1; h <= 9; h++) {
+      const hole = roundHoles.find(x => x.hole === h);
+      if (hole && hole.score) {
+        front9Total += hole.score;
+        const par = hole.par;
+        let cls = 'sc-par';
+        if (par === '-1') cls = 'sc-birdie';
+        else if (par === '-2' || par === '-3') cls = 'sc-eagle';
+        else if (par === '+1') cls = 'sc-bogey';
+        else if (par && parseInt(par) >= 2) cls = 'sc-dbl';
+        html += `<td><span class="${cls}">${Math.round(hole.score)}</span></td>`;
+      } else {
+        html += '<td>\u2014</td>';
+      }
+    }
+    html += `<td style="font-weight:700">${front9Total > 0 ? front9Total : '\u2014'}</td></tr></table>`;
+
+    // Back 9
+    html += '<table class="scorecard"><tr><th>Loch</th>';
+    for (let h = 10; h <= 18; h++) html += `<th>${h}</th>`;
+    html += '<th>IN</th></tr><tr><td class="hole-num">Score</td>';
+    let back9Total = 0;
+    for (let h = 10; h <= 18; h++) {
+      const hole = roundHoles.find(x => x.hole === h);
+      if (hole && hole.score) {
+        back9Total += hole.score;
+        const par = hole.par;
+        let cls = 'sc-par';
+        if (par === '-1') cls = 'sc-birdie';
+        else if (par === '-2' || par === '-3') cls = 'sc-eagle';
+        else if (par === '+1') cls = 'sc-bogey';
+        else if (par && parseInt(par) >= 2) cls = 'sc-dbl';
+        html += `<td><span class="${cls}">${Math.round(hole.score)}</span></td>`;
+      } else {
+        html += '<td>\u2014</td>';
+      }
+    }
+    html += `<td style="font-weight:700">${back9Total > 0 ? back9Total : '\u2014'}</td></tr></table>`;
+  }
+
+  if (!html) html = '<p style="color:var(--text3);text-align:center;padding:20px">Noch keine Loch-Daten verfügbar</p>';
+
+  document.getElementById('scorecardContent').innerHTML = html;
+  openModal('modalScorecard');
+}
 
 /* ===================== UI Helpers ===================== */
 function openModal(id) {
@@ -1529,9 +1592,25 @@ async function fetchLiveScores() {
       const linescores = c.linescores || [];
       const roundScores = {};
       for (let i = 0; i < linescores.length && i < 4; i++) {
-        const val = linescores[i].value;
-        if (val !== undefined && val !== null && val > 0) {
-          roundScores['r' + (i + 1)] = val;
+        const dv = linescores[i].displayValue;
+        if (dv !== undefined && dv !== null) {
+          const roundToPar = dv === 'E' ? 0 : parseInt(dv);
+          if (!isNaN(roundToPar)) {
+            roundScores['r' + (i + 1)] = PAR + roundToPar;
+          }
+        }
+      }
+
+      // Hole-by-hole data
+      const holes = {};
+      for (let i = 0; i < linescores.length && i < 4; i++) {
+        const roundHoles = linescores[i].linescores || [];
+        if (roundHoles.length > 0) {
+          holes['r' + (i + 1)] = roundHoles.map(h => ({
+            hole: h.period,
+            score: h.value,
+            par: h.scoreType ? h.scoreType.displayValue : null
+          }));
         }
       }
 
@@ -1539,10 +1618,12 @@ async function fetchLiveScores() {
       const status = c.status || {};
       const thru = status.displayValue || '';
       const statusType = status.type?.name || '';
+      const totalToPar = c.score === 'E' ? 0 : parseInt(c.score) || 0;
 
       scores[name] = {
         ...roundScores,
-        toPar: parseInt(c.score) || 0,
+        holes,
+        toPar: totalToPar,
         thru: thru,
         status: statusType,
         madeCut: statusType !== 'cut'
@@ -1607,8 +1688,7 @@ function startLiveRefresh() {
 
 
 /* ===================== Start ===================== */
-init();
-startLiveRefresh();
+init().then(() => startLiveRefresh());
 </script>
 </body>
 </html>
