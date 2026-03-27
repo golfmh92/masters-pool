@@ -156,15 +156,15 @@ body::before{content:'';position:fixed;inset:0;background:
 .golfer-rd.bogey{color:var(--bogey)}
 .golfer-rd.eagle{color:var(--eagle)}
 .golfer-cut{font-size:10px;color:var(--red);font-weight:600;margin-left:8px}
-.scorecard{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.scorecard{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;table-layout:fixed}
 .scorecard th{background:var(--bg2);padding:6px 4px;text-align:center;font-weight:600;color:var(--text2);font-size:10px}
 .scorecard td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--border)}
 .scorecard .hole-num{color:var(--text3);font-size:10px}
-.scorecard .sc-birdie{color:#fff;background:var(--birdie);border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
-.scorecard .sc-eagle{color:#fff;background:var(--eagle);border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
-.scorecard .sc-bogey{color:#fff;background:var(--bogey);border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-birdie{color:#fff;background:#E63946;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-eagle{color:#000;background:#F4D03F;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.scorecard .sc-bogey{color:#fff;background:#2563EB;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
 .scorecard .sc-par{color:var(--text)}
-.scorecard .sc-dbl{color:#fff;background:#8B0000;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-dbl{color:#fff;background:#000;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
 .scorecard-round{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--green);margin:12px 0 6px;letter-spacing:1px}
 .round-headers{display:flex;justify-content:flex-end;gap:6px;padding:0 14px 6px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
 .round-headers span{width:36px;text-align:center}
@@ -331,15 +331,25 @@ body::before{content:'';position:fixed;inset:0;background:
     <!-- LEADERBOARD -->
     <div class="view active" id="viewLeaderboard">
       <div class="stats-row" id="statsRow"></div>
-      <div id="payoutSection"></div>
       <input class="input" type="text" id="lbFilter" placeholder="Mitspieler suchen..." oninput="renderLeaderboard()" style="margin-bottom:12px">
       <div class="round-tabs" id="lbRoundTabs"></div>
       <div id="leaderboardList"></div>
     </div>
 
+    <!-- TOURNAMENT LEADERBOARD -->
+    <div class="view" id="viewTournament">
+      <input class="input" type="text" id="tournamentFilter" placeholder="Spieler suchen..." oninput="renderTournament()" style="margin-bottom:12px">
+      <div id="tournamentList"></div>
+    </div>
+
     <!-- DRAFT -->
     <div class="view" id="viewDraft">
       <div id="draftContent"></div>
+    </div>
+
+    <!-- PAYOUTS -->
+    <div class="view" id="viewPayouts">
+      <div id="payoutsViewContent"></div>
     </div>
 
     <!-- SCORING (admin) -->
@@ -386,7 +396,15 @@ body::before{content:'';position:fixed;inset:0;background:
       <svg viewBox="0 0 24 24"><path d="M8 21h8m-4-4v4M6 3h12l-1.5 6.5a2 2 0 01-2 1.5h-5a2 2 0 01-2-1.5L6 3z"/><circle cx="12" cy="13" r="2"/></svg>
       <span>Rangliste</span>
     </button>
-    <button class="tab" data-tab="draft" onclick="switchTab('draft')">
+    <button class="tab" data-tab="tournament" onclick="switchTab('tournament')">
+      <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z" fill="none" stroke="currentColor" stroke-width="0"/><path d="M16 3l5 5-11 11-5-1 1-5L16 3z"/><path d="M14 7l3 3"/></svg>
+      <span>Leaderboard</span>
+    </button>
+    <button class="tab" data-tab="payouts" onclick="switchTab('payouts')">
+      <svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span>Payouts</span>
+    </button>
+    <button class="tab hidden" data-tab="draft" id="tabDraft" onclick="switchTab('draft')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span>Draft</span>
     </button>
@@ -609,6 +627,7 @@ function setAdmin(yes, uid) {
   S.userId = uid;
   document.getElementById('btnAdmin').classList.toggle('active', yes);
   document.getElementById('tabScoring').classList.toggle('hidden', !yes);
+  document.getElementById('tabDraft').classList.toggle('hidden', !yes);
   document.getElementById('fab').classList.toggle('hidden', !yes || !['draft','leaderboard'].includes(S.activeTab));
 }
 
@@ -753,6 +772,8 @@ function fmtMoney(val) {
 function render() {
   updateIdentityBar();
   renderLeaderboard();
+  renderTournament();
+  renderPayoutsView();
   renderDraft();
   if (S.isAdmin) renderScoring();
   updateFab();
@@ -784,9 +805,27 @@ function getCountingGolfers(participantId, round) {
   }));
 }
 
-function renderPayouts(pot, ranking) {
-  const section = document.getElementById('payoutSection');
-  if (S.participants.length < 2) { section.innerHTML = ''; return; }
+function renderPayoutsView() {
+  const pot = S.participants.length * ENTRY_FEE;
+  const ranking = getRanking();
+  const section = document.getElementById('payoutsViewContent');
+  if (!section) return;
+  if (S.participants.length < 2) {
+    section.innerHTML = '<div class="empty"><div class="empty-icon">&#128176;</div><h3>Noch keine Payouts</h3><p>Mindestens 2 Mitspieler nötig</p></div>';
+    return;
+  }
+  const html = buildPayoutHtml(pot, ranking);
+  section.innerHTML = `
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val">${S.participants.length}</div><div class="stat-label">Mitspieler</div></div>
+      <div class="stat-card"><div class="stat-val">${fmtMoney(pot)}</div><div class="stat-label">Pot</div></div>
+      <div class="stat-card"><div class="stat-val">${fmtMoney(pot*.6)}</div><div class="stat-label">1. Platz</div></div>
+    </div>
+    ${html}`;
+}
+
+function buildPayoutHtml(pot, ranking) {
+  if (S.participants.length < 2) return '';
 
   const p1 = Math.round(pot * 0.6);
   const p2 = Math.round(pot * 0.3);
@@ -859,8 +898,8 @@ function renderPayouts(pot, ranking) {
     });
   }
 
-  section.innerHTML = `<div class="payout-card" onclick="this.classList.toggle('open')">
-    <div class="payout-card-header">
+  return `<div class="payout-card open">
+    <div class="payout-card-header" onclick="this.parentElement.classList.toggle('open')">
       <span>Payouts &amp; Abrechnung</span>
       <svg class="toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
     </div>
@@ -878,8 +917,6 @@ function renderLeaderboard() {
     <div class="stat-card"><div class="stat-val">${fmtMoney(pot*.6)}</div><div class="stat-label">1. Platz</div></div>
   `;
 
-  // Payout section
-  renderPayouts(pot, ranking);
 
   // Filter by search
   const lbFilterVal = (document.getElementById('lbFilter')?.value || '').toLowerCase().trim();
@@ -897,6 +934,21 @@ function renderLeaderboard() {
   }
 
   const rd = S.lbRound; // 0=total, 1-4=round
+
+  // Sort by selected round if not Gesamt
+  if (rd > 0) {
+    filteredRanking.sort((a, b) => {
+      const aElim = a.isEliminated ? 1 : 0;
+      const bElim = b.isEliminated ? 1 : 0;
+      if (aElim !== bElim) return aElim - bElim;
+      const aScore = a.rounds[rd - 1];
+      const bScore = b.rounds[rd - 1];
+      if (aScore === null && bScore === null) return 0;
+      if (aScore === null) return 1;
+      if (bScore === null) return -1;
+      return aScore - bScore;
+    });
+  }
 
   let rank = 0;
   document.getElementById('leaderboardList').innerHTML = filteredRanking.map((t, i) => {
@@ -950,6 +1002,10 @@ function renderLeaderboard() {
             const rel = sc !== null ? sc - PAR : null;
             const sCls = scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
+            // Mid-round: show toPar + thru instead of score
+            if (g._live && g._live.currentRound === r && !g._live.finished) {
+              return `<div class="golfer-rd" style="font-size:11px;color:var(--green);font-weight:600;line-height:1.1">${fmtScore(g._live.toPar)}<div style="font-size:8px;color:var(--text3);font-weight:400">${g._live.thru}</div></div>`;
+            }
             return `<div class="golfer-rd ${sCls}" style="${counting ? 'background:rgba(0,103,71,.08);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
           }).join('');
           // Live toPar + thru column
@@ -1335,76 +1391,201 @@ async function removeBonus(id) {
 
 
 /* ===================== Scorecard ===================== */
+/* ===================== Tournament Leaderboard ===================== */
+function renderTournament() {
+  const list = document.getElementById('tournamentList');
+  if (!list) return;
+  const entries = Object.entries(S.liveScores);
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Keine Live-Daten</h3><p>Das Turnier hat noch nicht begonnen oder die Daten werden geladen.</p></div>';
+    return;
+  }
+
+  const filter = (document.getElementById('tournamentFilter')?.value || '').toLowerCase().trim();
+
+  // Build player list sorted by toPar
+  let players = entries.map(([name, data]) => {
+    // Find team assignment
+    const draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(name));
+    const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
+    return { name, data, team: team ? team.name : null };
+  });
+
+  if (filter) {
+    players = players.filter(p => p.name.toLowerCase().includes(filter) || (p.team && p.team.toLowerCase().includes(filter)));
+  }
+
+  players.sort((a, b) => a.data.toPar - b.data.toPar);
+
+  let rank = 0, prevScore = null;
+  list.innerHTML = players.map((p, i) => {
+    if (p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; }
+    const scoreCls = p.data.toPar < 0 ? 'under' : p.data.toPar > 0 ? 'over' : 'even';
+
+    // Round scores display
+    const rounds = [1,2,3,4].map(r => {
+      if (p.data.currentRound === r && !p.data.finished) {
+        const liveColor = p.data.toPar < 0 ? '#E63946' : p.data.toPar === 0 ? '#2563EB' : '#000';
+        return `<span style="font-size:10px;color:${liveColor};font-weight:600">${fmtScore(p.data.toPar)}<span style="font-size:8px;color:var(--text3);font-weight:400;display:block">${p.data.thru}</span></span>`;
+      }
+      const sc = p.data['r' + r];
+      if (!sc) return '<span style="color:var(--text3)">\u2014</span>';
+      const rel = sc - PAR;
+      return `<span style="color:${rel < 0 ? '#E63946' : rel === 0 ? '#2563EB' : '#000'};font-weight:500">${sc}</span>`;
+    });
+
+    const teamBadge = p.team ? `<div style="font-size:10px;color:var(--gold);margin-top:1px">${esc(p.team)}</div>` : '';
+
+    // Format name as "Nachname V."
+    const nameParts = p.name.trim().split(' ');
+    const shortName = nameParts.length > 1
+      ? nameParts.slice(1).join(' ') + ' ' + nameParts[0][0] + '.'
+      : p.name;
+
+    return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap" onclick="showScorecardByName('${esc(p.name)}')">
+      <div class="lb-rank" style="width:28px;flex-shrink:0">${rank}</div>
+      <div style="flex:1;min-width:0;overflow:hidden">
+        <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(shortName)}</div>
+        ${teamBadge}
+      </div>
+      <div style="display:flex;gap:3px;align-items:center;font-size:12px;flex-shrink:0;margin-left:4px">
+        ${rounds.map(r => `<div style="width:26px;text-align:center">${r}</div>`).join('')}
+      </div>
+      <div style="width:42px;text-align:right;flex-shrink:0">
+        <div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showScorecardByName(playerName) {
+  const data = S.liveScores[playerName];
+  if (!data || !data.holes) {
+    showToast('Keine Loch-Daten verfügbar');
+    return;
+  }
+  // Find team
+  const draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(playerName));
+  const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
+  const teamInfo = team ? ` <span style="font-size:13px;color:var(--gold);font-weight:400">${esc(team.name)}</span>` : '';
+
+  document.getElementById('scorecardTitle').innerHTML = esc(playerName) + teamInfo;
+  renderScorecardContent(data);
+  openModal('modalScorecard');
+}
+
 function showScorecard(golferId) {
   const golfer = S.golfers.find(g => g.id === golferId);
   if (!golfer || !golfer._live || !golfer._live.holes) {
     showToast('Keine Loch-Daten verfügbar');
     return;
   }
+  // Find team
+  const team = S.participants.find(p => p.id === golfer.participant_id);
+  const teamInfo = team ? ` <span style="font-size:13px;color:var(--gold);font-weight:400">${esc(team.name)}</span>` : '';
 
-  document.getElementById('scorecardTitle').textContent = golfer.name;
+  document.getElementById('scorecardTitle').innerHTML = esc(golfer.name) + teamInfo;
+  renderScorecardContent(golfer._live);
+  openModal('modalScorecard');
+}
 
+function renderScorecardContent(live) {
   let html = '';
-  const live = golfer._live;
 
-  for (let r = 1; r <= 4; r++) {
-    const roundHoles = live.holes['r' + r];
-    if (!roundHoles || roundHoles.length === 0) continue;
-
-    const roundScore = live['r' + r];
-    const roundToPar = roundScore ? roundScore - PAR : null;
-
-    html += `<div class="scorecard-round">Runde ${r}${roundToPar !== null ? ' (' + fmtScore(roundToPar) + ')' : ''}</div>`;
-
-    // Front 9
-    html += '<table class="scorecard"><tr><th>Loch</th>';
-    for (let h = 1; h <= 9; h++) html += `<th>${h}</th>`;
-    html += '<th>OUT</th></tr><tr><td class="hole-num">Score</td>';
-    let front9Total = 0;
-    for (let h = 1; h <= 9; h++) {
-      const hole = roundHoles.find(x => x.hole === h);
-      if (hole && hole.score) {
-        front9Total += hole.score;
-        const par = hole.par;
-        let cls = 'sc-par';
-        if (par === '-1') cls = 'sc-birdie';
-        else if (par === '-2' || par === '-3') cls = 'sc-eagle';
-        else if (par === '+1') cls = 'sc-bogey';
-        else if (par && parseInt(par) >= 2) cls = 'sc-dbl';
-        html += `<td><span class="${cls}">${Math.round(hole.score)}</span></td>`;
-      } else {
-        html += '<td>\u2014</td>';
-      }
-    }
-    html += `<td style="font-weight:700">${front9Total > 0 ? front9Total : '\u2014'}</td></tr></table>`;
-
-    // Back 9
-    html += '<table class="scorecard"><tr><th>Loch</th>';
-    for (let h = 10; h <= 18; h++) html += `<th>${h}</th>`;
-    html += '<th>IN</th></tr><tr><td class="hole-num">Score</td>';
-    let back9Total = 0;
-    for (let h = 10; h <= 18; h++) {
-      const hole = roundHoles.find(x => x.hole === h);
-      if (hole && hole.score) {
-        back9Total += hole.score;
-        const par = hole.par;
-        let cls = 'sc-par';
-        if (par === '-1') cls = 'sc-birdie';
-        else if (par === '-2' || par === '-3') cls = 'sc-eagle';
-        else if (par === '+1') cls = 'sc-bogey';
-        else if (par && parseInt(par) >= 2) cls = 'sc-dbl';
-        html += `<td><span class="${cls}">${Math.round(hole.score)}</span></td>`;
-      } else {
-        html += '<td>\u2014</td>';
-      }
-    }
-    html += `<td style="font-weight:700">${back9Total > 0 ? back9Total : '\u2014'}</td></tr></table>`;
+  function holeClass(relPar) {
+    if (!relPar || relPar === 'E') return 'sc-par';
+    const v = parseInt(relPar);
+    if (isNaN(v)) return 'sc-par';
+    if (v <= -2) return 'sc-eagle';
+    if (v === -1) return 'sc-birdie';
+    if (v === 1) return 'sc-bogey';
+    if (v >= 2) return 'sc-dbl';
+    return 'sc-par';
   }
 
-  if (!html) html = '<p style="color:var(--text3);text-align:center;padding:20px">Noch keine Loch-Daten verfügbar</p>';
+  function getHolePar(hole) {
+    if (!hole || !hole.score || !hole.par) return null;
+    const rel = hole.par === 'E' ? 0 : parseInt(hole.par);
+    if (isNaN(rel)) return null;
+    return Math.round(hole.score) - rel;
+  }
+
+  // Find which rounds have data
+  const activeRounds = [];
+  for (let r = 1; r <= 4; r++) {
+    const rh = live.holes['r' + r];
+    if (rh && rh.length > 0) activeRounds.push(r);
+  }
+
+  if (activeRounds.length === 0) {
+    html = '<p style="color:var(--text3);text-align:center;padding:20px">Noch keine Loch-Daten verfügbar</p>';
+  } else {
+    // Get par from first round with data (par is the same every round)
+    const parSource = live.holes['r' + activeRounds[0]];
+
+    function buildNine(start, end, label, hasExtraCol, fillExtra) {
+      let h = '<table class="scorecard"><tr><th></th>';
+      for (let i = start; i <= end; i++) h += `<th>${i}</th>`;
+      h += `<th>${label}</th>`;
+      if (hasExtraCol) h += `<th>${fillExtra ? 'Tot' : ''}</th>`;
+      h += '</tr>';
+
+      // Par row
+      h += '<tr><td class="hole-num">Par</td>';
+      let parTotal = 0;
+      for (let i = start; i <= end; i++) {
+        const hole = parSource.find(x => x.hole === i);
+        const p = getHolePar(hole);
+        if (p) { h += `<td style="color:var(--text3)">${p}</td>`; parTotal += p; }
+        else h += '<td></td>';
+      }
+      h += `<td style="font-weight:600;color:var(--text3)">${parTotal || ''}</td>`;
+      if (hasExtraCol) h += `<td style="font-weight:600;color:var(--text3)">${fillExtra ? PAR : ''}</td>`;
+      h += '</tr>';
+
+      // One row per round
+      for (const r of activeRounds) {
+        const roundHoles = live.holes['r' + r];
+        const roundScore = live['r' + r];
+
+        h += `<tr><td class="hole-num" style="font-weight:600;color:var(--green)">R${r}</td>`;
+        let total = 0;
+        let hasScore = false;
+        for (let i = start; i <= end; i++) {
+          const hole = roundHoles ? roundHoles.find(x => x.hole === i) : null;
+          if (hole && hole.score) {
+            total += hole.score;
+            hasScore = true;
+            h += `<td><span class="${holeClass(hole.par)}">${Math.round(hole.score)}</span></td>`;
+          } else {
+            h += '<td style="color:var(--text3)">\u2014</td>';
+          }
+        }
+        h += `<td style="font-weight:700">${hasScore ? Math.round(total) : '\u2014'}</td>`;
+        if (hasExtraCol) h += `<td style="font-weight:700">${fillExtra && roundScore ? roundScore : ''}</td>`;
+        h += '</tr>';
+      }
+
+      h += '</table>';
+      return h;
+    }
+
+    // Totals summary
+    html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
+    html += `<div style="font-size:13px;color:var(--text2)">Gesamt: <strong style="color:var(--green)">${fmtScore(live.toPar)}</strong></div>`;
+    for (const r of activeRounds) {
+      const sc = live['r' + r];
+      const tp = sc ? sc - PAR : null;
+      html += `<div style="font-size:13px;color:var(--text3)">R${r}: ${tp !== null ? fmtScore(tp) : (live.currentRound === r ? fmtScore(live.toPar) + ' (' + live.thru + ')' : '\u2014')}</div>`;
+    }
+    html += '</div>';
+
+    html += buildNine(1, 9, 'OUT', true, false);
+    html += '<div style="height:4px"></div>';
+    html += buildNine(10, 18, 'IN', true, true);
+  }
 
   document.getElementById('scorecardContent').innerHTML = html;
-  openModal('modalScorecard');
 }
 
 /* ===================== UI Helpers ===================== */
@@ -1418,6 +1599,29 @@ function closeModal(id) {
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+// Swipe-down to dismiss modals
+document.querySelectorAll('.modal').forEach(modal => {
+  let startY = 0, currentY = 0, swiping = false;
+  modal.addEventListener('touchstart', e => {
+    if (modal.scrollTop <= 0) { startY = e.touches[0].clientY; swiping = true; }
+  }, { passive: true });
+  modal.addEventListener('touchmove', e => {
+    if (!swiping) return;
+    currentY = e.touches[0].clientY;
+    const dy = currentY - startY;
+    if (dy > 0) modal.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  modal.addEventListener('touchend', () => {
+    if (!swiping) return;
+    const dy = currentY - startY;
+    swiping = false;
+    if (dy > 80) {
+      modal.closest('.modal-overlay').classList.remove('open');
+    }
+    modal.style.transform = '';
+    currentY = 0;
   });
 });
 
@@ -1591,34 +1795,48 @@ async function fetchLiveScores() {
 
       const linescores = c.linescores || [];
       const roundScores = {};
-      for (let i = 0; i < linescores.length && i < 4; i++) {
-        const dv = linescores[i].displayValue;
-        if (dv !== undefined && dv !== null) {
-          const roundToPar = dv === 'E' ? 0 : parseInt(dv);
-          if (!isNaN(roundToPar)) {
-            roundScores['r' + (i + 1)] = PAR + roundToPar;
-          }
-        }
-      }
-
-      // Hole-by-hole data
       const holes = {};
+      let currentRound = 0;
+      let finished = true;
+      let thruHoles = '';
+
       for (let i = 0; i < linescores.length && i < 4; i++) {
-        const roundHoles = linescores[i].linescores || [];
-        if (roundHoles.length > 0) {
-          holes['r' + (i + 1)] = roundHoles.map(h => ({
+        const roundData = linescores[i];
+        const dv = roundData.displayValue;
+        const roundHolesData = roundData.linescores || [];
+        const holesPlayed = roundHolesData.length;
+
+        // Store hole-by-hole data
+        if (holesPlayed > 0) {
+          holes['r' + (i + 1)] = roundHolesData.map(h => ({
             hole: h.period,
             score: h.value,
             par: h.scoreType ? h.scoreType.displayValue : null
           }));
         }
+
+        if (dv !== undefined && dv !== null) {
+          const roundToPar = dv === 'E' ? 0 : parseInt(dv);
+          if (!isNaN(roundToPar)) {
+            if (holesPlayed >= 18) {
+              // Round complete — store final score
+              roundScores['r' + (i + 1)] = PAR + roundToPar;
+            } else if (holesPlayed > 0) {
+              // Mid-round — don't store as final score
+              currentRound = i + 1;
+              finished = false;
+              thruHoles = '' + holesPlayed;
+            }
+          }
+        }
       }
 
       // Status/thru info
       const status = c.status || {};
-      const thru = status.displayValue || '';
+      const statusThru = status.displayValue || '';
       const statusType = status.type?.name || '';
       const totalToPar = c.score === 'E' ? 0 : parseInt(c.score) || 0;
+      const thru = statusThru || thruHoles;
 
       scores[name] = {
         ...roundScores,
@@ -1626,7 +1844,9 @@ async function fetchLiveScores() {
         toPar: totalToPar,
         thru: thru,
         status: statusType,
-        madeCut: statusType !== 'cut'
+        madeCut: statusType !== 'cut',
+        currentRound,
+        finished
       };
     }
 
