@@ -149,7 +149,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .golfer-row{display:flex;align-items:center;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .golfer-row.cut{opacity:.4;text-decoration:line-through}
 .golfer-row.counting{border-left:3px solid var(--green)}
-.golfer-name{flex:1;font-weight:500;font-size:14px}
+.golfer-name{flex:1;font-weight:500;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .golfer-rounds{display:flex;gap:6px}
 .golfer-rd{width:36px;text-align:center;font-size:12px;font-weight:500;padding:4px 0;border-radius:6px;background:var(--bg2)}
 .golfer-rd.birdie{color:var(--birdie)}
@@ -729,14 +729,22 @@ function calcTeamTotalLive(participantId) {
 function getRanking() {
   const teams = S.participants.map(p => {
     const eliminated = checkEliminated(p.id);
-    const totalManual = calcTeamTotal(p.id);
-    const totalLive = calcTeamTotalLive(p.id);
-    // Prefer live total when available, fall back to manual
-    const total = totalLive !== null ? totalLive : totalManual;
     const bonus = getTeamBonusTotal(p.id);
     const rounds = [1,2,3,4].map(r => calcTeamRoundScore(p.id, r));
-    const isLive = totalLive !== null;
-    return { ...p, total, bonus, rounds, isEliminated: eliminated, isLive };
+    // Total = sum of round scores (consistent with individual day scores)
+    let total = null;
+    let hasAny = false;
+    for (const rs of rounds) {
+      if (rs !== null) { total = (total || 0) + rs; hasAny = true; }
+    }
+    if (hasAny) total -= bonus;
+    // If no round scores yet, fall back to live toPar ranking
+    if (!hasAny) {
+      const totalLive = calcTeamTotalLive(p.id);
+      if (totalLive !== null) { total = totalLive - bonus; hasAny = true; }
+    }
+    const isLive = hasAny;
+    return { ...p, total: hasAny ? total : null, bonus, rounds, isEliminated: eliminated, isLive };
   });
   // Sort: non-eliminated first, then by total ascending, nulls last
   teams.sort((a, b) => {
@@ -1417,9 +1425,33 @@ function renderTournament() {
 
   players.sort((a, b) => a.data.toPar - b.data.toPar);
 
+  // Sort WD players to bottom
+  players.sort((a, b) => {
+    const aWD = a.data.status === 'wd' ? 1 : 0;
+    const bWD = b.data.status === 'wd' ? 1 : 0;
+    if (aWD !== bWD) return aWD - bWD;
+    return a.data.toPar - b.data.toPar;
+  });
+
   let rank = 0, prevScore = null;
   list.innerHTML = players.map((p, i) => {
-    if (p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; }
+    const isWD = p.data.status === 'wd';
+    if (!isWD && p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; }
+
+    if (isWD) {
+      const teamBadge = p.team ? `<div style="font-size:10px;color:var(--gold);margin-top:1px">${esc(p.team)}</div>` : '';
+      const nameParts = p.name.trim().split(' ');
+      const shortName = nameParts.length > 1 ? nameParts.slice(1).join(' ') + ' ' + nameParts[0][0] + '.' : p.name;
+      return `<div class="lb-entry" style="opacity:0.4">
+        <div class="lb-rank" style="width:28px;flex-shrink:0">\u2014</div>
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <div style="font-weight:600;font-size:12px">${esc(shortName)}</div>
+          ${teamBadge}
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--red)">WD</div>
+      </div>`;
+    }
+
     const scoreCls = p.data.toPar < 0 ? 'under' : p.data.toPar > 0 ? 'over' : 'even';
 
     // Round scores display
@@ -1838,15 +1870,21 @@ async function fetchLiveScores() {
       const totalToPar = c.score === 'E' ? 0 : parseInt(c.score) || 0;
       const thru = statusThru || thruHoles;
 
+      // Detect WD/DQ: displayValue is "-" for all rounds and no hole data
+      const hasAnyRound = Object.keys(roundScores).length > 0;
+      const hasAnyHoles = Object.keys(holes).length > 0;
+      const allDash = linescores.length > 0 && linescores.every(l => l.displayValue === '-');
+      const isWD = !hasAnyRound && !hasAnyHoles && allDash;
+
       scores[name] = {
         ...roundScores,
         holes,
         toPar: totalToPar,
         thru: thru,
-        status: statusType,
-        madeCut: statusType !== 'cut',
+        status: isWD ? 'wd' : statusType,
+        madeCut: statusType !== 'cut' && !isWD,
         currentRound,
-        finished
+        finished: finished || isWD
       };
     }
 
