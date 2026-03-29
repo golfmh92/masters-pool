@@ -808,8 +808,8 @@ function golferStatus(g) {
   // 2. ESPN live status
   if (g._live && g._live.status === 'cut') return 'cut';
   if (g._live && g._live.status === 'wd') return 'wd';
-  // 3. Auto: no ESPN match, no scores, tournament active → treat as WD
-  if (!g._liveMatched && !S.scores.some(s => s.golfer_id === g.id) && Object.keys(S.liveScores).length > 10) return 'wd';
+  // 3. No auto-WD — ESPN only shows top ~60 players, not all
+  // Use Admin panel to manually set WD/CUT
   return 'active';
 }
 
@@ -2665,27 +2665,12 @@ async function fetchLiveScores() {
 }
 
 function applyLiveScores() {
-  const autoWd = [];
   for (const g of S.golfers) {
     const live = matchGolferToLive(g.name);
-    if (!live) {
-      if (g.made_cut && !S.scores.some(s => s.golfer_id === g.id) && Object.keys(S.liveScores).length > 10) {
-        if (!g._notifiedWd) autoWd.push(g);
-      }
-      continue;
-    }
-
+    if (!live) continue;
     g._live = live;
     g._liveMatched = true;
-
-    if (live.status === 'cut' && g.made_cut) {
-      g._liveCut = true;
-    }
-  }
-  if (autoWd.length > 0 && S.isAdmin) {
-    const names = autoWd.map(g => shortName(g.name)).join(', ');
-    showToast(`Auto-WD: ${names} — keine ESPN-Daten`);
-    autoWd.forEach(g => g._notifiedWd = true);
+    if (live.status === 'cut' && g.made_cut) g._liveCut = true;
   }
 }
 
