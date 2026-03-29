@@ -2542,11 +2542,7 @@ function matchGolferToLive(golferName) {
       if (fn[0] === firstInit) return m.data;
     }
   }
-  // Try partial / contains match
-  for (const [liveName, data] of Object.entries(S.liveScores)) {
-    const ln = normalizeName(liveName);
-    if (ln.includes(norm) || norm.includes(ln)) return data;
-  }
+  // No partial match — too many false positives
   return null;
 }
 
