@@ -422,6 +422,11 @@ body::before{content:'';position:fixed;inset:0;background:
       <div id="draftContent"></div>
     </div>
 
+    <!-- ADMIN -->
+    <div class="view" id="viewAdmin">
+      <div id="adminContent"></div>
+    </div>
+
     <!-- STATS -->
     <div class="view" id="viewStats">
       <div id="statsContent"></div>
@@ -487,6 +492,10 @@ body::before{content:'';position:fixed;inset:0;background:
     <button class="tab hidden" data-tab="draft" id="tabDraft" onclick="switchTab('draft')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span>Draft</span>
+    </button>
+    <button class="tab hidden" data-tab="admin" id="tabAdmin" onclick="switchTab('admin')">
+      <svg viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Admin</span>
     </button>
     <button class="tab" data-tab="rules" onclick="switchTab('rules')">
       <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
@@ -726,6 +735,7 @@ function setAdmin(yes, uid) {
   S.userId = uid;
   // Admin button removed — login via long-press on title
   document.getElementById('tabDraft').classList.toggle('hidden', !yes);
+  document.getElementById('tabAdmin').classList.toggle('hidden', !yes);
   document.getElementById('fab').classList.toggle('hidden', !yes || !['draft','leaderboard'].includes(S.activeTab));
 }
 
@@ -786,6 +796,26 @@ function calcTeamTotal(participantId) {
     .reduce((sum, b) => sum + b.shots, 0);
   total -= bonusShots;
   return hasAny ? total : null;
+}
+
+function golferStatus(g) {
+  // 1. Manual override: made_cut = false
+  if (!g.made_cut) {
+    const hasScores = S.scores.some(s => s.golfer_id === g.id);
+    const hasLiveScores = g._live && (g._live.r1 || g._live.r2);
+    return (hasScores || hasLiveScores) ? 'cut' : 'wd';
+  }
+  // 2. ESPN live status
+  if (g._live && g._live.status === 'cut') return 'cut';
+  if (g._live && g._live.status === 'wd') return 'wd';
+  // 3. Auto: no ESPN match, no scores, tournament active
+  if (!g._liveMatched && !S.scores.some(s => s.golfer_id === g.id) && Object.keys(S.liveScores).length > 10) return 'unknown';
+  return 'active';
+}
+
+function isGolferOut(g) {
+  const s = golferStatus(g);
+  return s === 'cut' || s === 'wd' || s === 'unknown';
 }
 
 function checkEliminated(participantId) {
@@ -1091,6 +1121,50 @@ function closeStPanel() {
   document.getElementById('stPanel').classList.remove('open');
 }
 
+/* ===================== Admin Panel ===================== */
+function renderAdmin() {
+  const c = document.getElementById('adminContent');
+  if (!c || !S.isAdmin) return;
+
+  let html = '<div style="font-family:var(--font-display);font-size:20px;color:var(--green);margin-bottom:16px">Spieler-Status</div>';
+
+  for (const p of S.participants) {
+    const golfers = S.golfers.filter(g => g.participant_id === p.id);
+    if (golfers.length === 0) continue;
+
+    html += `<div style="font-weight:600;font-size:14px;color:var(--text);margin:16px 0 8px">${esc(p.name)}</div>`;
+
+    for (const g of golfers) {
+      const hasScores = S.scores.some(s => s.golfer_id === g.id);
+      const hasLive = !!g._liveMatched;
+      let status = 'aktiv';
+      let statusCls = 'color:var(--green)';
+      if (!g.made_cut && hasScores) { status = 'CUT'; statusCls = 'color:var(--red)'; }
+      else if (!g.made_cut && !hasScores) { status = 'WD'; statusCls = 'color:var(--red)'; }
+      else if (!hasLive && !hasScores && Object.keys(S.liveScores).length > 0) { status = '?'; statusCls = 'color:var(--text3)'; }
+
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
+        <div style="font-size:13px;font-weight:500">${esc(g.name)}</div>
+        <div style="display:flex;gap:6px">
+          <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${g.made_cut ? 'background:var(--green);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',true)">Aktiv</button>
+          <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${!g.made_cut ? 'background:var(--red);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',false)">WD/CUT</button>
+        </div>
+      </div>`;
+    }
+  }
+  c.innerHTML = html;
+}
+
+async function setGolferStatus(golferId, madeCut) {
+  const { error } = await sb.from('masters_golfers').update({ made_cut: madeCut }).eq('id', golferId);
+  if (error) { showToast('Fehler: ' + error.message); return; }
+  // Update local state
+  const g = S.golfers.find(g => g.id === golferId);
+  if (g) g.made_cut = madeCut;
+  render();
+  showToast(madeCut ? 'Aktiv gesetzt' : 'WD/CUT gesetzt');
+}
+
 function render() {
   updateIdentityBar();
   renderLeaderboard();
@@ -1099,6 +1173,7 @@ function render() {
   renderStats();
   renderPayoutsView();
   renderDraft();
+  if (S.isAdmin) renderAdmin();
   updateFab();
 }
 
@@ -1112,7 +1187,7 @@ function getCountingGolfers(participantId, round) {
   const count = round <= 2 ? 4 : 3;
   const withScores = teamGolfers
     .map(g => {
-      const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+      const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
       const sc = getGolferScore(g.id, round);
       return { ...g, roundScore: sc, isCut };
     })
@@ -1377,7 +1452,7 @@ function renderMeineGolfer() {
 
   let html = `<div class="mg-strip"><div class="mg-title">Meine Golfer <span class="mg-score ${teamCls}" style="font-size:14px;margin-left:6px">${teamTotal}</span></div><div class="mg-scroll">`;
   for (const g of sortedGolfers) {
-    const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+    const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
     const isCounting = countingIds.has(g.id);
     const toPar = g._live ? g._live.toPar : null;
     const thru = g._live ? g._live.thru : null;
@@ -1609,7 +1684,7 @@ function renderLeaderboard() {
       if (rd === 0) {
         expandHtml += '<div class="round-headers" style="padding-left:0"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:40px">Live</span></div>';
         expandHtml += sortedTeamGolfers.map(g => {
-          const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+          const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
           const rounds = [1,2,3,4].map(r => {
             const sc = getGolferScore(g.id, r);
             const rel = sc !== null ? sc - PAR : null;
@@ -1633,12 +1708,12 @@ function renderLeaderboard() {
             <div class="golfer-name">${esc(shortName(g.name))}</div>
             <div class="golfer-rounds">${rounds}</div>
             ${liveHtml}
-            ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
+            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : gStatus === 'unknown' ? '?' : 'CUT'}</div>` : ''}
           </div>`;
         }).join('');
       } else {
         expandHtml += sortedTeamGolfers.map(g => {
-          const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+          const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
           const sc = getGolferScore(g.id, rd);
           const rel = sc !== null ? sc - PAR : null;
           const sCls = scoreClass(rel);
@@ -1657,7 +1732,7 @@ function renderLeaderboard() {
               ${liveInfo}
               ${!hasRoundScore && !liveInfo ? '<div class="golfer-rd">—</div>' : ''}
             </div>
-            ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
+            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : gStatus === 'unknown' ? '?' : 'CUT'}</div>` : ''}
           </div>`;
         }).join('');
       }
@@ -1738,7 +1813,7 @@ function renderTeams() {
 
       html += `<div class="round-headers"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:40px">Live</span></div>`;
       html += teamGolfers.map(g => {
-        const isCut = !g.made_cut || (g._live && g._live.status === 'cut');
+        const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
         const cutCls = isCut ? 'cut' : '';
         const rounds = [1,2,3,4].map(r => {
           const sc = getGolferScore(g.id, r);
@@ -1757,7 +1832,7 @@ function renderTeams() {
           <div class="golfer-name">${esc(g.name)}</div>
           <div class="golfer-rounds">${rounds}</div>
           ${liveHtml}
-          ${isCut ? '<div class="golfer-cut">CUT</div>' : ''}
+          ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : gStatus === 'unknown' ? '?' : 'CUT'}</div>` : ''}
         </div>`;
       }).join('');
     }
