@@ -2066,12 +2066,14 @@ function renderTournament() {
     return a.data.toPar - b.data.toPar;
   });
 
-  // Compute ranks
-  let rank = 0, prevScore = null;
+  // Compute ranks — only show rank for first player at each score (PGA style)
+  let rank = 0, prevScore = null, shownRank = false;
   players.forEach((p, i) => {
     const isOut = p.data.status === 'wd' || p.data.status === 'cut';
-    if (!isOut && p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; }
+    if (!isOut && p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; shownRank = false; }
     p._rank = isOut ? 0 : rank;
+    p._showRank = !isOut && !shownRank;
+    if (!isOut && !shownRank) shownRank = true;
   });
 
   function renderTournamentEntry(p) {
@@ -2128,7 +2130,7 @@ function renderTournament() {
 
     return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap" onclick="showScorecardByName('${esc(p.name)}')">
       ${favBtn}
-      <div class="lb-rank" style="width:28px;flex-shrink:0">${p._rank}</div>
+      <div class="lb-rank" style="width:28px;flex-shrink:0">${p._showRank ? p._rank : ''}</div>
       <div style="flex:1;min-width:0;overflow:hidden">
         <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(shortName)}</div>
         ${teamBadge}
