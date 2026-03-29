@@ -253,7 +253,6 @@ body::before{content:'';position:fixed;inset:0;background:
 .st-category-header .st-toggle{color:var(--text3);transition:transform .2s}
 .st-category.open .st-toggle{transform:rotate(180deg)}
 .st-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.st-category.open .st-body{max-height:3000px}
 .st-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid var(--border);font-size:13px}
 .st-row.mine{background:var(--green-dim)}
 .st-rank{width:24px;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text3);text-align:center;flex-shrink:0}
@@ -990,6 +989,19 @@ function computeAllStats() {
   return players;
 }
 
+function toggleStCategory(el) {
+  const body = el.querySelector('.st-body');
+  if (el.classList.contains('open')) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(() => { body.style.maxHeight = '0'; });
+    el.classList.remove('open');
+  } else {
+    el.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    body.addEventListener('transitionend', () => { if (el.classList.contains('open')) body.style.maxHeight = 'none'; }, { once: true });
+  }
+}
+
 function renderStats() {
   const container = document.getElementById('statsContent');
   if (!container) return;
@@ -1024,7 +1036,7 @@ function renderStats() {
 
     const hasMore = list.length > 3;
     html += `<div class="st-category${ci < 4 ? ' open' : ''}" id="stCat${ci}">`;
-    html += `<div class="st-category-header" onclick="this.parentElement.classList.toggle('open')">${cat.title} ${chevron}</div>`;
+    html += `<div class="st-category-header" onclick="toggleStCategory(this.parentElement)">${cat.title} ${chevron}</div>`;
     html += `<div class="st-body"><div class="${hasMore ? 'st-top3' : ''}" id="stList${ci}">`;
 
     list.forEach((p, i) => {
@@ -1044,6 +1056,7 @@ function renderStats() {
   });
 
   container.innerHTML = html;
+  container.querySelectorAll('.st-category.open .st-body').forEach(b => { b.style.maxHeight = 'none'; });
 }
 
 // Stats panel cache for slide-in
