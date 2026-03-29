@@ -773,7 +773,9 @@ function calcTeamRoundScore(participantId, round) {
   const count = (round <= 2) ? 4 : 3;
   const roundScores = [];
   for (const g of teamGolfers) {
-    if (round >= 3 && !g.made_cut) continue;
+    const gs = golferStatus(g);
+    if (gs === 'wd') continue; // WD: skip all rounds
+    if (round >= 3 && (gs === 'cut' || !g.made_cut)) continue; // CUT: skip R3+R4
     const sc = getGolferScore(g.id, round);
     if (sc !== null) roundScores.push(sc - PAR);
   }
@@ -841,7 +843,7 @@ function calcTeamTotalLive(participantId) {
   const count = hasCutData ? 3 : 4;
 
   const toParValues = teamGolfers
-    .filter(g => g._live && g._live.status !== 'cut')
+    .filter(g => g._live && g._live.status !== 'cut' && golferStatus(g) !== 'wd')
     .map(g => g._live.toPar)
     .filter(v => v !== undefined && v !== null);
 
@@ -1143,7 +1145,7 @@ function renderAdmin() {
         <div style="font-size:13px;font-weight:500">${esc(g.name)}</div>
         <div style="display:flex;gap:6px">
           <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${g.made_cut ? 'background:var(--green);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',true)">Aktiv</button>
-          <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${!g.made_cut ? 'background:var(--red);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',false)">WD/CUT</button>
+          <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${!g.made_cut ? 'background:var(--red);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',false)">WD</button>
         </div>
       </div>`;
     }
@@ -1158,7 +1160,7 @@ async function setGolferStatus(golferId, madeCut) {
   const g = S.golfers.find(g => g.id === golferId);
   if (g) g.made_cut = madeCut;
   render();
-  showToast(madeCut ? 'Aktiv gesetzt' : 'WD/CUT gesetzt');
+  showToast(madeCut ? 'Aktiv gesetzt' : 'WD gesetzt');
 }
 
 function render() {
@@ -1424,7 +1426,7 @@ function renderMeineGolfer() {
   const count = activeRound <= 2 ? 4 : 3;
   const countingIds = new Set();
   const scored = myGolfers
-    .filter(g => g.made_cut || activeRound <= 2)
+    .filter(g => golferStatus(g) !== 'wd' && (g.made_cut || activeRound <= 2))
     .map(g => ({ id: g.id, toPar: g._live ? g._live.toPar : null }))
     .filter(g => g.toPar !== null)
     .sort((a, b) => a.toPar - b.toPar);
@@ -1432,9 +1434,11 @@ function renderMeineGolfer() {
 
   // Sort by toPar (best first), cut golfers last
   const sortedGolfers = [...myGolfers].sort((a, b) => {
-    const aCut = !a.made_cut || (a._live && a._live.status === 'cut') ? 1 : 0;
-    const bCut = !b.made_cut || (b._live && b._live.status === 'cut') ? 1 : 0;
-    if (aCut !== bCut) return aCut - bCut;
+    const aS = golferStatus(a);
+    const bS = golferStatus(b);
+    const aOrder = aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
+    const bOrder = bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
+    if (aOrder !== bOrder) return aOrder - bOrder;
     const aTP = a._live ? a._live.toPar : 999;
     const bTP = b._live ? b._live.toPar : 999;
     return aTP - bTP;
@@ -1660,17 +1664,20 @@ function renderLeaderboard() {
       for (let r = 1; r <= 4; r++) {
         const count = r <= 2 ? 4 : 3;
         const withScores = teamGolfers
-          .filter(g => r < 3 || g.made_cut)
+          .filter(g => golferStatus(g) !== 'wd' && (r < 3 || g.made_cut))
           .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
           .filter(x => x.score !== null)
           .sort((a, b) => a.score - b.score);
         withScores.slice(0, count).forEach(x => { countingMap[x.id + '_' + r] = true; });
       }
 
+      // Sort golfers: by toPar (best first), cut players last
       const sortedTeamGolfers = [...teamGolfers].sort((a, b) => {
-        const aCut = !a.made_cut || (a._live && a._live.status === 'cut') ? 1 : 0;
-        const bCut = !b.made_cut || (b._live && b._live.status === 'cut') ? 1 : 0;
-        if (aCut !== bCut) return aCut - bCut;
+        const aS = golferStatus(a);
+        const bS = golferStatus(b);
+        const aOrder = aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
+        const bOrder = bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
+        if (aOrder !== bOrder) return aOrder - bOrder;
         const aTP = a._live ? a._live.toPar : 999;
         const bTP = b._live ? b._live.toPar : 999;
         return aTP - bTP;
@@ -1800,7 +1807,7 @@ function renderTeams() {
       for (let r = 1; r <= 4; r++) {
         const count = r <= 2 ? 4 : 3;
         const withScores = teamGolfers
-          .filter(g => r < 3 || g.made_cut)
+          .filter(g => golferStatus(g) !== 'wd' && (r < 3 || g.made_cut))
           .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
           .filter(x => x.score !== null)
           .sort((a, b) => a.score - b.score);
