@@ -413,7 +413,7 @@ body::before{content:'';position:fixed;inset:0;background:
 
     <!-- TOURNAMENT LEADERBOARD -->
     <div class="view" id="viewTournament">
-      <input class="input" type="text" id="tournamentFilter" placeholder="Spieler suchen..." oninput="renderTournament()" style="margin-bottom:12px">
+      <input class="input" type="text" id="tournamentFilter" placeholder="Spieler suchen..." oninput="renderTournament()" style="margin-bottom:12px;width:100%;display:block">
       <div id="tournamentList"></div>
     </div>
 
@@ -801,23 +801,22 @@ function calcTeamTotal(participantId) {
 }
 
 function golferStatus(g) {
-  // 1. Manual override: made_cut = false
+  // 1. Manual DQ: score of -1 in R1 = DQ marker
   if (!g.made_cut) {
-    const hasScores = S.scores.some(s => s.golfer_id === g.id);
+    const dqMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
+    if (dqMarker) return 'dq';
+    const hasScores = S.scores.some(s => s.golfer_id === g.id && s.score > 0);
     const hasLiveScores = g._live && (g._live.r1 || g._live.r2);
     return (hasScores || hasLiveScores) ? 'cut' : 'wd';
   }
   // 2. ESPN live status
   if (g._live && g._live.status === 'cut') return 'cut';
-  if (g._live && g._live.status === 'wd') return 'wd';
-  // 3. No auto-WD — ESPN only shows top ~60 players, not all
-  // Use Admin panel to manually set WD/CUT
   return 'active';
 }
 
 function isGolferOut(g) {
   const s = golferStatus(g);
-  return s === 'cut' || s === 'wd';
+  return s === 'cut' || s === 'wd' || s === 'dq';
 }
 
 function checkEliminated(participantId) {
@@ -1133,19 +1132,19 @@ function renderAdmin() {
     html += `<div style="font-weight:600;font-size:14px;color:var(--text);margin:16px 0 8px">${esc(p.name)}</div>`;
 
     for (const g of golfers) {
-      const hasScores = S.scores.some(s => s.golfer_id === g.id);
-      const hasLive = !!g._liveMatched;
-      let status = 'aktiv';
-      let statusCls = 'color:var(--green)';
-      if (!g.made_cut && hasScores) { status = 'CUT'; statusCls = 'color:var(--red)'; }
-      else if (!g.made_cut && !hasScores) { status = 'WD'; statusCls = 'color:var(--red)'; }
-      else if (!hasLive && !hasScores && Object.keys(S.liveScores).length > 0) { status = '?'; statusCls = 'color:var(--text3)'; }
+      const gs = golferStatus(g);
+      const isManualWd = gs === 'wd' && !g.made_cut;
+      const isManualDq = gs === 'dq';
+      const isAktiv = !isManualWd && !isManualDq;
+      const btn = (active, color) => `padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${active ? `background:var(--${color});color:#fff` : 'background:var(--bg);color:var(--text2)'}`;
+      const mcLabel = gs === 'cut' ? ' <span style="font-size:10px;color:var(--red)">(MC)</span>' : '';
 
       html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
-        <div style="font-size:13px;font-weight:500">${esc(g.name)}</div>
-        <div style="display:flex;gap:6px">
-          <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${g.made_cut ? 'background:var(--green);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',true)">Aktiv</button>
-          <button style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${!g.made_cut ? 'background:var(--red);color:#fff' : 'background:var(--bg);color:var(--text2)'}" onclick="setGolferStatus('${g.id}',false)">WD</button>
+        <div style="font-size:13px;font-weight:500">${esc(g.name)}${mcLabel}</div>
+        <div style="display:flex;gap:4px">
+          <button style="${btn(isAktiv, 'green')}" onclick="setGolferStatus('${g.id}','active')">Aktiv</button>
+          <button style="${btn(isManualWd, 'red')}" onclick="setGolferStatus('${g.id}','wd')">WD</button>
+          <button style="${btn(isManualDq, 'red')}" onclick="setGolferStatus('${g.id}','dq')">DQ</button>
         </div>
       </div>`;
     }
@@ -1153,14 +1152,32 @@ function renderAdmin() {
   c.innerHTML = html;
 }
 
-async function setGolferStatus(golferId, madeCut) {
+async function setGolferStatus(golferId, status) {
+  // status: 'active', 'wd', 'dq'
+  const madeCut = status === 'active';
+
+  // Set made_cut
   const { error } = await sb.from('masters_golfers').update({ made_cut: madeCut }).eq('id', golferId);
   if (error) { showToast('Fehler: ' + error.message); return; }
+
+  // DQ marker: score -1 in round 1
+  if (status === 'dq') {
+    await sb.from('masters_scores').upsert({ golfer_id: golferId, round: 1, score: -1, user_id: S.userId }, { onConflict: 'golfer_id,round' });
+  } else {
+    // Remove DQ marker if exists
+    const existing = S.scores.find(s => s.golfer_id === golferId && s.round === 1 && s.score === -1);
+    if (existing) await sb.from('masters_scores').delete().eq('id', existing.id);
+  }
+
   // Update local state
   const g = S.golfers.find(g => g.id === golferId);
   if (g) g.made_cut = madeCut;
+  // Reload scores to reflect DQ marker change
+  const { data: scores } = await sb.from('masters_scores').select('*');
+  if (scores) S.scores = scores;
   render();
-  showToast(madeCut ? 'Aktiv gesetzt' : 'WD gesetzt');
+  const labels = { active: 'Aktiv', wd: 'WD', dq: 'DQ' };
+  showToast(`${labels[status]} gesetzt`);
 }
 
 function render() {
@@ -1436,8 +1453,8 @@ function renderMeineGolfer() {
   const sortedGolfers = [...myGolfers].sort((a, b) => {
     const aS = golferStatus(a);
     const bS = golferStatus(b);
-    const aOrder = aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
-    const bOrder = bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
+    const aOrder = aS === 'dq' ? 3 : aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
+    const bOrder = bS === 'dq' ? 3 : bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
     if (aOrder !== bOrder) return aOrder - bOrder;
     const aTP = a._live ? a._live.toPar : 999;
     const bTP = b._live ? b._live.toPar : 999;
@@ -1467,7 +1484,7 @@ function renderMeineGolfer() {
       <div class="mg-info">
         <div class="mg-name">${esc(shortName(g.name))}</div>
         <div class="mg-score ${scoreCls}">${fmtScore(toPar)}</div>
-        ${isCut ? `<div class="mg-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru ? `<div class="mg-thru">${thru}</div>` : '')}
+        ${isCut ? `<div class="mg-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru ? `<div class="mg-thru">${thru}</div>` : '')}
       </div>
     </div>`;
   }
@@ -1675,8 +1692,8 @@ function renderLeaderboard() {
       const sortedTeamGolfers = [...teamGolfers].sort((a, b) => {
         const aS = golferStatus(a);
         const bS = golferStatus(b);
-        const aOrder = aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
-        const bOrder = bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
+        const aOrder = aS === 'dq' ? 3 : aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
+        const bOrder = bS === 'dq' ? 3 : bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
         if (aOrder !== bOrder) return aOrder - bOrder;
         const aTP = a._live ? a._live.toPar : 999;
         const bTP = b._live ? b._live.toPar : 999;
@@ -1711,7 +1728,7 @@ function renderLeaderboard() {
             <div class="golfer-name">${esc(shortName(g.name))}</div>
             <div class="golfer-rounds">${rounds}</div>
             ${liveHtml}
-            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
+            ${isCut ? `<div class="golfer-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
           </div>`;
         }).join('');
       } else {
@@ -1735,7 +1752,7 @@ function renderLeaderboard() {
               ${liveInfo}
               ${!hasRoundScore && !liveInfo ? '<div class="golfer-rd">—</div>' : ''}
             </div>
-            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
+            ${isCut ? `<div class="golfer-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
           </div>`;
         }).join('');
       }
@@ -1835,7 +1852,7 @@ function renderTeams() {
           <div class="golfer-name">${esc(g.name)}</div>
           <div class="golfer-rounds">${rounds}</div>
           ${liveHtml}
-          ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
+          ${isCut ? `<div class="golfer-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -2627,31 +2644,21 @@ async function fetchLiveScores() {
       const totalToPar = c.score === 'E' ? 0 : parseInt(c.score) || 0;
       const thru = statusThru || thruHoles;
 
-      // Detect WD: ESPN explicitly says "withdrawn" OR a mid-tournament round has "-" after completed rounds
-      // but NOT if R4 is "-" and R3 is complete (player just hasn't started R4 yet)
-      const espnStatus = statusType.toLowerCase();
-      const isWD = espnStatus === 'withdrawn' || linescores.some((l, idx) => {
-        if (l.displayValue !== '-' || idx === 0) return false;
-        const prevHasScore = linescores[idx-1].displayValue && linescores[idx-1].displayValue !== '-';
-        // Only WD if there's a "-" gap followed by another "-" (mid-tournament quit)
-        // or if it's not the last round (last round "-" just means not started yet)
-        const isLastRound = idx === linescores.length - 1;
-        return prevHasScore && !isLastRound;
-      });
-      // Detect missed cut: only 2 rounds in linescores, both complete, ESPN says "cut"
+      // Detect missed cut: 2 rounds with scores, no R3/R4
+      // WD/DQ: handled manually via Admin panel
       const maxRounds = linescores.length;
       const completedRounds = Object.keys(roundScores).filter(k => !k.includes('toPar')).length;
-      const isCut = !isWD && (espnStatus === 'cut' || (maxRounds <= 2 && completedRounds >= 2 && currentRound === 0 && finished));
+      const isCut = maxRounds <= 2 && completedRounds >= 2 && currentRound === 0 && finished;
 
       scores[name] = {
         ...roundScores,
         holes,
         toPar: totalToPar,
         thru: thru,
-        status: isWD ? 'wd' : (isCut ? 'cut' : statusType),
-        madeCut: !isWD && !isCut,
+        status: isCut ? 'cut' : statusType,
+        madeCut: !isCut,
         currentRound,
-        finished: finished || isWD,
+        finished: finished,
         headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : ''
       };
     }
