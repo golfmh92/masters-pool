@@ -808,14 +808,14 @@ function golferStatus(g) {
   // 2. ESPN live status
   if (g._live && g._live.status === 'cut') return 'cut';
   if (g._live && g._live.status === 'wd') return 'wd';
-  // 3. Auto: no ESPN match, no scores, tournament active
-  if (!g._liveMatched && !S.scores.some(s => s.golfer_id === g.id) && Object.keys(S.liveScores).length > 10) return 'unknown';
+  // 3. Auto: no ESPN match, no scores, tournament active → treat as WD
+  if (!g._liveMatched && !S.scores.some(s => s.golfer_id === g.id) && Object.keys(S.liveScores).length > 10) return 'wd';
   return 'active';
 }
 
 function isGolferOut(g) {
   const s = golferStatus(g);
-  return s === 'cut' || s === 'wd' || s === 'unknown';
+  return s === 'cut' || s === 'wd';
 }
 
 function checkEliminated(participantId) {
@@ -1708,7 +1708,7 @@ function renderLeaderboard() {
             <div class="golfer-name">${esc(shortName(g.name))}</div>
             <div class="golfer-rounds">${rounds}</div>
             ${liveHtml}
-            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : gStatus === 'unknown' ? '?' : 'CUT'}</div>` : ''}
+            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
           </div>`;
         }).join('');
       } else {
@@ -1732,7 +1732,7 @@ function renderLeaderboard() {
               ${liveInfo}
               ${!hasRoundScore && !liveInfo ? '<div class="golfer-rd">—</div>' : ''}
             </div>
-            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : gStatus === 'unknown' ? '?' : 'CUT'}</div>` : ''}
+            ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
           </div>`;
         }).join('');
       }
@@ -1832,7 +1832,7 @@ function renderTeams() {
           <div class="golfer-name">${esc(g.name)}</div>
           <div class="golfer-rounds">${rounds}</div>
           ${liveHtml}
-          ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : gStatus === 'unknown' ? '?' : 'CUT'}</div>` : ''}
+          ${isCut ? `<div class="golfer-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -2673,19 +2673,27 @@ async function fetchLiveScores() {
 }
 
 function applyLiveScores() {
-  // For each drafted golfer, find their live scores and apply
+  const autoWd = [];
   for (const g of S.golfers) {
     const live = matchGolferToLive(g.name);
-    if (!live) continue;
+    if (!live) {
+      if (g.made_cut && !S.scores.some(s => s.golfer_id === g.id) && Object.keys(S.liveScores).length > 10) {
+        if (!g._notifiedWd) autoWd.push(g);
+      }
+      continue;
+    }
 
-    // Store live data on the golfer object for display
     g._live = live;
     g._liveMatched = true;
 
-    // Update cut status from live data
     if (live.status === 'cut' && g.made_cut) {
-      g._liveCut = true; // track that live says missed cut
+      g._liveCut = true;
     }
+  }
+  if (autoWd.length > 0 && S.isAdmin) {
+    const names = autoWd.map(g => shortName(g.name)).join(', ');
+    showToast(`Auto-WD: ${names} — keine ESPN-Daten`);
+    autoWd.forEach(g => g._notifiedWd = true);
   }
 }
 
