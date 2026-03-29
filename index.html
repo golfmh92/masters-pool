@@ -633,7 +633,8 @@ body::before{content:'';position:fixed;inset:0;background:
 const PAR = 72; // Memorial Park Golf Course, Houston
 const ENTRY_FEE = 20;
 const ESPN_GOLF_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
-const LIVE_REFRESH_MS = 120000; // 2 minutes
+const LIVE_REFRESH_MS = 30000; // 30 seconds when live
+const IDLE_REFRESH_MS = 600000; // 10 minutes when not playing
 
 /* ===================== Supabase ===================== */
 const sb = supabase.createClient('__SUPA_URL__', '__SUPA_KEY__');
@@ -2601,6 +2602,10 @@ async function fetchLiveScores() {
     if (!mastersEvent) { updateLiveBadge(false); return; }
 
     S.liveEventName = mastersEvent.name || 'Tournament';
+    const eventState = mastersEvent.status?.type?.state || '';
+    S.tournamentLive = eventState === 'in';
+    S.tournamentFinished = eventState === 'post';
+
     const competitions = mastersEvent.competitions || [];
     if (competitions.length === 0) { updateLiveBadge(false); return; }
 
@@ -2728,7 +2733,19 @@ function startLiveRefresh() {
   fetchMastersField();
   fetchLiveScores();
   S.liveTimer = setInterval(fetchLiveScores, LIVE_REFRESH_MS);
-  setInterval(() => updateLiveBadge(S.liveActive), 30000);
+  setInterval(() => {
+    updateLiveBadge(S.liveActive);
+    // Adjust polling: 30s when live, 10min when pre, stop when post
+    let desired;
+    if (S.tournamentFinished) desired = 0;
+    else if (S.tournamentLive) desired = LIVE_REFRESH_MS;
+    else desired = IDLE_REFRESH_MS;
+    if (S._currentInterval !== desired) {
+      clearInterval(S.liveTimer);
+      if (desired > 0) S.liveTimer = setInterval(fetchLiveScores, desired);
+      S._currentInterval = desired;
+    }
+  }, 30000);
 }
 
 
