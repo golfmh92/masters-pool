@@ -820,12 +820,8 @@ function isGolferOut(g) {
 
 function checkEliminated(participantId) {
   const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
-  const missedCut = teamGolfers.filter(g => {
-    if (!g.made_cut) return true; // manually marked
-    if (g._live && g._live.status === 'cut') return true; // live data
-    return false;
-  }).length;
-  return missedCut > 2;
+  const out = teamGolfers.filter(g => isGolferOut(g)).length;
+  return out > 2;
 }
 
 function getTeamBonusTotal(participantId) {
@@ -1467,7 +1463,7 @@ function renderMeineGolfer() {
       <div class="mg-info">
         <div class="mg-name">${esc(shortName(g.name))}</div>
         <div class="mg-score ${scoreCls}">${fmtScore(toPar)}</div>
-        ${isCut ? '<div class="mg-cut">CUT</div>' : (thru ? `<div class="mg-thru">${thru}</div>` : '')}
+        ${isCut ? `<div class="mg-cut">${gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru ? `<div class="mg-thru">${thru}</div>` : '')}
       </div>
     </div>`;
   }
