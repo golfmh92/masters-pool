@@ -8,4 +8,6 @@ sed \
   -e "s|__SUPA_KEY__|${SUPA_KEY}|g" \
   index.html > dist/index.html
 
-echo "Build complete: dist/index.html"
+cp sw.js dist/sw.js
+
+echo "Build complete: dist/index.html + sw.js"
