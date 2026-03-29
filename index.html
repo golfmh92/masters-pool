@@ -2124,9 +2124,10 @@ function renderTournament() {
 
   // Build player list sorted by toPar
   let players = entries.map(([name, data]) => {
-    // Find team assignment
     const draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(name));
     const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
+    const manualStatus = draftedGolfer ? golferStatus(draftedGolfer) : null;
+    if (manualStatus === 'wd') data = { ...data, status: 'wd' };
     return { name, data, team: team ? team.name : null };
   });
 
