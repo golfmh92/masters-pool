@@ -1123,33 +1123,35 @@ function renderAdmin() {
   const c = document.getElementById('adminContent');
   if (!c || !S.isAdmin) return;
 
-  let html = '<div style="font-family:var(--font-display);font-size:20px;color:var(--green);margin-bottom:16px">Spieler-Status</div>';
+  const adminFilter = (document.getElementById('adminFilter')?.value || '').toLowerCase().trim();
+  let allGolfers = [...S.golfers].sort((a, b) => a.name.localeCompare(b.name));
+  if (adminFilter) allGolfers = allGolfers.filter(g => g.name.toLowerCase().includes(adminFilter));
 
-  for (const p of S.participants) {
-    const golfers = S.golfers.filter(g => g.participant_id === p.id);
-    if (golfers.length === 0) continue;
+  let html = '<input class="input" type="text" id="adminFilter" placeholder="Spieler suchen..." oninput="renderAdmin()" style="margin-bottom:12px;width:100%;display:block">';
 
-    html += `<div style="font-weight:600;font-size:14px;color:var(--text);margin:16px 0 8px">${esc(p.name)}</div>`;
+  for (const g of allGolfers) {
+    const team = S.participants.find(p => p.id === g.participant_id);
+    const gs = golferStatus(g);
+    const isManualWd = gs === 'wd' && !g.made_cut;
+    const isManualDq = gs === 'dq';
+    const isAktiv = !isManualWd && !isManualDq;
+    const btn = (active, color) => `padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${active ? `background:var(--${color});color:#fff` : 'background:var(--bg);color:var(--text2)'}`;
+    const mcLabel = gs === 'cut' ? ' <span style="font-size:10px;color:var(--red)">(MC)</span>' : '';
+    const teamLabel = team ? `<span style="font-size:10px;color:var(--gold);margin-left:4px">${esc(team.name)}</span>` : '';
 
-    for (const g of golfers) {
-      const gs = golferStatus(g);
-      const isManualWd = gs === 'wd' && !g.made_cut;
-      const isManualDq = gs === 'dq';
-      const isAktiv = !isManualWd && !isManualDq;
-      const btn = (active, color) => `padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${active ? `background:var(--${color});color:#fff` : 'background:var(--bg);color:var(--text2)'}`;
-      const mcLabel = gs === 'cut' ? ' <span style="font-size:10px;color:var(--red)">(MC)</span>' : '';
-
-      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
-        <div style="font-size:13px;font-weight:500">${esc(g.name)}${mcLabel}</div>
-        <div style="display:flex;gap:4px">
-          <button style="${btn(isAktiv, 'green')}" onclick="setGolferStatus('${g.id}','active')">Aktiv</button>
-          <button style="${btn(isManualWd, 'red')}" onclick="setGolferStatus('${g.id}','wd')">WD</button>
-          <button style="${btn(isManualDq, 'red')}" onclick="setGolferStatus('${g.id}','dq')">DQ</button>
-        </div>
-      </div>`;
-    }
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
+      <div style="font-size:13px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}${teamLabel}${mcLabel}</div>
+      <div style="display:flex;gap:4px">
+        <button style="${btn(isAktiv, 'green')}" onclick="setGolferStatus('${g.id}','active')">Aktiv</button>
+        <button style="${btn(isManualWd, 'red')}" onclick="setGolferStatus('${g.id}','wd')">WD</button>
+        <button style="${btn(isManualDq, 'red')}" onclick="setGolferStatus('${g.id}','dq')">DQ</button>
+      </div>
+    </div>`;
   }
   c.innerHTML = html;
+
+  const input = document.getElementById('adminFilter');
+  if (input && adminFilter) { input.value = adminFilter; input.setSelectionRange(adminFilter.length, adminFilter.length); input.focus(); }
 }
 
 async function setGolferStatus(golferId, status) {
