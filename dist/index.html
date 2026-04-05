@@ -741,6 +741,7 @@ body::before{content:'';position:fixed;inset:0;background:
 const PAR = 72; // Augusta National
 const ENTRY_FEE = 20;
 const CUT_TOP = 50; // Top 50 + Ties (Masters)
+const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Thursday
 const ESPN_GOLF_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const LIVE_REFRESH_MS = 30000; // 30 seconds when live
 const IDLE_REFRESH_MS = 600000; // 10 minutes when not playing
@@ -880,10 +881,20 @@ function calcTeamRoundScore(participantId, round) {
   const roundScores = [];
   for (const g of teamGolfers) {
     const gs = golferStatus(g);
-    if (gs === 'wd') continue; // WD: skip all rounds
-    if (round >= 3 && (gs === 'cut' || !g.made_cut)) continue; // CUT: skip R3+R4
+    if (gs === 'wd') continue;
+    if (round >= 3 && (gs === 'cut' || !g.made_cut)) continue;
     const sc = getGolferScore(g.id, round);
-    if (sc !== null) roundScores.push(sc - PAR);
+    let toPar = null;
+    if (sc !== null) {
+      toPar = sc - PAR;
+    } else if (g._live && g._live.currentRound === round && !g._live.finished) {
+      const rtp = g._live['r' + round + '_toPar'];
+      if (rtp !== undefined && rtp !== null) toPar = rtp;
+    }
+    if (toPar !== null) {
+      const bonus = round === 1 ? getGolferBonus(g.id) : 0;
+      roundScores.push(toPar - bonus);
+    }
   }
   if (roundScores.length === 0) return null;
   roundScores.sort((a, b) => a - b);
@@ -898,11 +909,6 @@ function calcTeamTotal(participantId) {
     const rs = calcTeamRoundScore(participantId, r);
     if (rs !== null) { total += rs; hasAny = true; }
   }
-  // Subtract bonuses
-  const bonusShots = S.bonuses
-    .filter(b => b.participant_id === participantId)
-    .reduce((sum, b) => sum + b.shots, 0);
-  total -= bonusShots;
   return hasAny ? total : null;
 }
 
@@ -933,9 +939,17 @@ function checkEliminated(participantId) {
 }
 
 function getTeamBonusTotal(participantId) {
-  return S.bonuses
-    .filter(b => b.participant_id === participantId)
-    .reduce((sum, b) => sum + b.shots, 0);
+  const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
+  let total = 0;
+  for (const g of teamGolfers) {
+    if (isGolferOut(g)) continue;
+    total += getGolferBonus(g.id);
+  }
+  return total;
+}
+
+function getGolferBonus(golferId) {
+  return S.bonuses.filter(b => b.golfer_id === golferId).reduce((sum, b) => sum + b.shots, 0);
 }
 
 function calcTeamTotalLive(participantId) {
@@ -964,17 +978,15 @@ function getRanking() {
     const eliminated = checkEliminated(p.id);
     const bonus = getTeamBonusTotal(p.id);
     const rounds = [1,2,3,4].map(r => calcTeamRoundScore(p.id, r));
-    // Total = sum of round scores (consistent with individual day scores)
     let total = null;
     let hasAny = false;
     for (const rs of rounds) {
       if (rs !== null) { total = (total || 0) + rs; hasAny = true; }
     }
-    if (hasAny) total -= bonus;
     // If no round scores yet, fall back to live toPar ranking
     if (!hasAny) {
       const totalLive = calcTeamTotalLive(p.id);
-      if (totalLive !== null) { total = totalLive - bonus; hasAny = true; }
+      if (totalLive !== null) { total = totalLive; hasAny = true; }
     }
     const isLive = hasAny;
     return { ...p, total: hasAny ? total : null, bonus, rounds, isEliminated: eliminated, isLive };
@@ -1113,6 +1125,11 @@ function toggleStCategory(el) {
 function renderStats() {
   const container = document.getElementById('statsContent');
   if (!container) return;
+
+  if (new Date() < TOURNAMENT_START) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128202;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Stats werden ab der ersten Runde berechnet</p></div>';
+    return;
+  }
 
   const players = computeAllStats();
   if (players.length === 0) {
@@ -1754,7 +1771,7 @@ function renderLeaderboard() {
         const count = r <= 2 ? 4 : 3;
         const withScores = teamGolfers
           .filter(g => golferStatus(g) !== 'wd' && (r < 3 || g.made_cut))
-          .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
+          .map(g => { const sc = getGolferScore(g.id, r); const bonus = r === 1 ? getGolferBonus(g.id) : 0; return { id: g.id, score: sc !== null ? sc - bonus : null }; })
           .filter(x => x.score !== null)
           .sort((a, b) => a.score - b.score);
         withScores.slice(0, count).forEach(x => { countingMap[x.id + '_' + r] = true; });
@@ -1777,17 +1794,20 @@ function renderLeaderboard() {
         expandHtml += '<div class="round-headers" style="padding-left:0"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:40px">Live</span></div>';
         expandHtml += sortedTeamGolfers.map(g => {
           const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
+          const golferBonus = getGolferBonus(g.id);
           const rounds = [1,2,3,4].map(r => {
             const sc = getGolferScore(g.id, r);
-            const rel = sc !== null ? sc - PAR : null;
+            const bonus = r === 1 ? golferBonus : 0;
+            const rel = sc !== null ? sc - PAR - bonus : null;
             const sCls = scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
-            // Mid-round: show toPar + thru instead of score
             if (g._live && g._live.currentRound === r && !g._live.finished) {
               const rtp = g._live['r' + r + '_toPar'] !== undefined ? g._live['r' + r + '_toPar'] : g._live.toPar;
-              return `<div class="golfer-rd" style="font-size:11px;color:var(--green);font-weight:600;line-height:1.1">${fmtScore(rtp)}<div style="font-size:8px;color:var(--text3);font-weight:400">${g._live.thru}</div></div>`;
+              const midBonusBadge = r === 1 && bonus > 0 ? `<div style="font-size:8px;color:var(--gold2);line-height:1;margin-top:2px">★-${bonus}</div>` : '';
+              return `<div class="golfer-rd" style="font-size:11px;color:var(--green);font-weight:600;line-height:1.1">${fmtScore(rtp)}<div style="font-size:8px;color:var(--text3);font-weight:400">${g._live.thru}</div>${midBonusBadge}</div>`;
             }
-            return `<div class="golfer-rd ${sCls}" style="height:auto;${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
+            const bonusBadge = r === 1 && bonus > 0 ? `<div style="font-size:8px;color:var(--gold2);line-height:1;margin-top:2px">★-${bonus}</div>` : '';
+            return `<div class="golfer-rd ${sCls}" style="height:auto;${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${sc !== null ? sc : '—'}${bonusBadge}</div>`;
           }).join('');
           // Live toPar + thru column
           const liveHtml = g._live
@@ -1811,14 +1831,15 @@ function renderLeaderboard() {
           const sCls = scoreClass(rel);
           const counting = countingMap[g.id + '_' + rd];
           const thru = (g._live && g._live.thru && !isCut) ? g._live.thru : '';
-          // Show toPar + thru if no final round score yet and live data available
           const hasRoundScore = sc !== null;
           const liveInfo = (!hasRoundScore && g._live && !isCut)
             ? `<span style="font-size:12px;font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</span>${thru ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${thru}</span>` : ''}`
             : '';
+          const golferBonus = rd === 1 ? getGolferBonus(g.id) : 0;
+          const golferBonusHtml = golferBonus > 0 ? `<span style="font-size:10px;color:var(--gold2);margin-left:4px">★-${golferBonus}</span>` : '';
           const cutBadgeRd = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
           return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer" onclick="event.stopPropagation();showScorecard('${g.id}')">
-            <div class="golfer-name">${esc(shortName(g.name))}${cutBadgeRd}</div>
+            <div class="golfer-name">${esc(shortName(g.name))}${golferBonusHtml}${cutBadgeRd}</div>
             <div style="display:flex;align-items:center;gap:6px">
               ${thru && hasRoundScore ? `<span style="font-size:10px;color:var(--text3)">${thru}</span>` : ''}
               ${hasRoundScore ? `<div class="golfer-rd ${sCls}" style="${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${fmtScore(rel)}</div>` : ''}
@@ -2205,7 +2226,32 @@ async function removeBonus(id) {
 function renderTournament() {
   const list = document.getElementById('tournamentList');
   if (!list) return;
-  const entries = Object.entries(S.liveScores);
+
+  if (new Date() < TOURNAMENT_START) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Live-Scores werden ab der ersten Runde angezeigt.</p></div>';
+    return;
+  }
+
+  let entries = Object.entries(S.liveScores);
+
+  // Fallback: if no ESPN data but frozen scores exist, build leaderboard from Supabase
+  if (entries.length === 0 && S.scores.length > 0 && localStorage.getItem('masters_frozen')) {
+    const synthScores = {};
+    for (const g of S.golfers) {
+      const rounds = {};
+      for (let r = 1; r <= 4; r++) {
+        const sc = S.scores.find(s => s.golfer_id === g.id && s.round === r && s.score > 0);
+        if (sc) rounds['r' + r] = sc.score;
+      }
+      if (Object.keys(rounds).length === 0) continue;
+      let toPar = 0;
+      for (const [k, v] of Object.entries(rounds)) { if (k.startsWith('r')) toPar += v - PAR; }
+      synthScores[g.name] = { ...rounds, toPar, thru: 'F', status: golferStatus(g) === 'cut' ? 'cut' : '', madeCut: g.made_cut, currentRound: 0, finished: true, headshot: '', holes: {} };
+    }
+    S.liveScores = synthScores;
+    entries = Object.entries(synthScores);
+  }
+
   if (entries.length === 0) {
     list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Keine Live-Daten</h3><p>Das Turnier hat noch nicht begonnen oder die Daten werden geladen.</p></div>';
     return;
@@ -2660,6 +2706,7 @@ function matchGolferToLive(golferName) {
 }
 
 async function fetchLiveScores() {
+  if (new Date() < TOURNAMENT_START) { updateLiveBadge(false); return; }
   try {
     const resp = await fetch(ESPN_GOLF_URL);
     if (!resp.ok) return;
@@ -2840,19 +2887,25 @@ function applyLiveScores() {
 function updateLiveBadge(active) {
   const badge = document.getElementById('liveBadge');
   const text = document.getElementById('liveText');
-  if (!S.liveActive && !active) {
+  if (!S.tournamentLive && !S.tournamentFinished && new Date() < TOURNAMENT_START) {
     badge.style.display = 'none';
+    return;
+  }
+  if (S.tournamentFinished) {
+    badge.style.display = 'inline-flex';
+    badge.classList.add('stale');
+    text.textContent = 'Beendet';
     return;
   }
   badge.style.display = 'inline-flex';
   if (active && S.liveLastUpdate) {
-    const ago = Math.round((Date.now() - S.liveLastUpdate.getTime()) / 1000);
     badge.classList.remove('stale');
-    if (ago < 10) text.textContent = 'Live';
-    else text.textContent = `Aktualisiert vor ${ago < 60 ? ago + 's' : Math.round(ago/60) + 'min'}`;
-  } else {
+    text.textContent = 'Live';
+  } else if (S.tournamentLive) {
     badge.classList.add('stale');
-    text.textContent = 'Offline';
+    text.textContent = 'Pause';
+  } else {
+    badge.style.display = 'none';
   }
 }
 
