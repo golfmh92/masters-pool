@@ -2620,6 +2620,7 @@ async function fetchMastersField() {
     if (!error && data && data.length > 0) {
       S.mastersField = data;
       S.fieldLoaded = true;
+      if (S.isAdmin) renderAdmin();
       return;
     }
   } catch (err) {

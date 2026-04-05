@@ -1,8 +1,8 @@
-// PGA Pool Test - Service Worker for Push Notifications
+// Masters Pool Test - Service Worker for Push Notifications
 
 self.addEventListener('push', event => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'PGA Pool';
+  const title = data.title || 'Masters Pool';
   const options = {
     body: data.body || '',
     icon: data.icon || undefined,
