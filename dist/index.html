@@ -2239,7 +2239,8 @@ function renderTournament() {
     const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
     const manualStatus = draftedGolfer ? golferStatus(draftedGolfer) : null;
     if (manualStatus === 'wd') data = { ...data, status: 'wd' };
-    return { name, data, team: team ? team.name : null };
+    const fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(name));
+    return { name, data, team: team ? team.name : null, debut: fieldEntry?.debut };
   });
 
   // Sort: active first by toPar, then cut, then WD
@@ -2284,6 +2285,7 @@ function renderTournament() {
 
     const nameParts = p.name.trim().split(' ');
     const shortName = nameParts.length > 1 ? nameParts.slice(1).join(' ') + ' ' + nameParts[0][0] + '.' : p.name;
+    const debutStar = p.debut ? '<span style="color:var(--gold);font-size:10px;margin-left:3px">★</span>' : '';
     const teamBadge = p.team ? `<div style="font-size:10px;color:var(--gold);margin-top:1px">${esc(p.team)}</div>` : '';
     const mineStyle = isMine && !isOut ? 'border-color:var(--green);background:linear-gradient(135deg,rgba(0,103,71,.06),#fff)' : '';
 
@@ -2299,7 +2301,7 @@ function renderTournament() {
         ${favBtn}
         <div class="lb-rank" style="width:28px;flex-shrink:0">\u2014</div>
         <div style="flex:1;min-width:0;overflow:hidden">
-          <div style="font-weight:600;font-size:12px">${esc(shortName)}</div>
+          <div style="font-weight:600;font-size:12px">${esc(shortName)}${debutStar}</div>
           ${teamBadge}
         </div>
         <div style="display:flex;gap:3px;align-items:center;font-size:12px;flex-shrink:0;margin-left:4px">
@@ -2329,7 +2331,7 @@ function renderTournament() {
       ${favBtn}
       <div class="lb-rank" style="width:28px;flex-shrink:0">${p._showRank ? p._rank : ''}</div>
       <div style="flex:1;min-width:0;overflow:hidden">
-        <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(shortName)}</div>
+        <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(shortName)}${debutStar}</div>
         ${teamBadge}
       </div>
       <div style="display:flex;gap:3px;align-items:center;font-size:12px;flex-shrink:0;margin-left:4px">
@@ -2580,7 +2582,7 @@ function shortName(fullName) {
 async function fetchMastersField() {
   // 1. Try Supabase first (pre-seeded field, available before tournament)
   try {
-    const { data, error } = await sb.from('masters_field').select('name, country').order('name');
+    const { data, error } = await sb.from('masters_field').select('name, country, debut').order('name');
     if (!error && data && data.length > 0) {
       S.mastersField = data;
       S.fieldLoaded = true;
@@ -2652,9 +2654,10 @@ function filterFieldList() {
     const sel = normalizeName(p.name) === normalizeName(selected) ? 'selected' : '';
     const dr = p.isDrafted ? 'drafted' : '';
     const flag = p.country ? `<span class="field-status">${p.country}</span>` : '';
+    const debutBadge = p.debut ? '<span style="color:var(--gold);font-size:11px;margin-left:3px">★</span>' : '';
     const draftLabel = p.isDrafted ? '<span class="field-status">bereits gedraftet</span>' : '';
     return `<div class="field-item ${sel} ${dr}" onclick="selectFieldPlayer('${esc(p.name)}',this)">
-      ${esc(p.name)}${flag}${draftLabel}</div>`;
+      ${esc(p.name)}${debutBadge}${flag}${draftLabel}</div>`;
   }).join('');
 }
 
