@@ -807,7 +807,7 @@ body::before{content:'';position:fixed;inset:0;background:
 const PAR = 72; // Augusta National
 const ENTRY_FEE = 20;
 const ESPN_GOLF_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
-const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Thursday
+const TOURNAMENT_START = new Date('2026-04-10T00:00:00'); // Masters Thursday R1
 const CUT_TOP = 50; // Top 50 + Ties (Masters)
 const LIVE_REFRESH_MS = 30000; // 30 seconds when live
 const IDLE_REFRESH_MS = 600000; // 10 minutes when not playing
@@ -1192,7 +1192,7 @@ function renderStats() {
   if (!container) return;
 
   if (new Date() < TOURNAMENT_START) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Ab Mittwoch werden hier die Stats des Masters angezeigt.</p></div>';
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Do, 10. April</h3><p>Ab Donnerstag werden hier die Stats des Masters angezeigt.</p></div>';
     return;
   }
   const players = computeAllStats();
@@ -1507,7 +1507,7 @@ function renderPayoutsView() {
   if (!section) return;
 
   if (new Date() < TOURNAMENT_START) {
-    section.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Ab Mittwoch werden hier die Payouts berechnet.</p></div>';
+    section.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Do, 10. April</h3><p>Ab Donnerstag werden hier die Payouts berechnet.</p></div>';
     return;
   }
 
@@ -2234,7 +2234,7 @@ function renderTournament() {
   const list = document.getElementById('tournamentList');
   if (!list) return;
   if (new Date() < TOURNAMENT_START) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Ab Mittwoch werden hier die Live-Scores des Masters angezeigt.</p></div>';
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Do, 10. April</h3><p>Ab Donnerstag werden hier die Live-Scores des Masters angezeigt.</p></div>';
     return;
   }
   let entries = Object.entries(S.liveScores);
@@ -2690,8 +2690,11 @@ function filterFieldList() {
     const flag = p.country ? `<span class="field-status">${p.country}</span>` : '';
     const debutBadge = p.debut ? '<span style="color:var(--gold);font-size:11px;margin-left:3px">★</span>' : '';
     const draftLabel = p.isDrafted ? '<span class="field-status">bereits gedraftet</span>' : '';
+    const isAmateur = /\(a\)\s*$/.test(p.name);
+    const cleanName = p.name.replace(/\s*\(a\)\s*$/, '');
+    const aBadge = isAmateur ? ' <span style="font-size:10px;color:var(--text3)">(a)</span>' : '';
     return `<div class="field-item ${sel} ${dr}" onclick="selectFieldPlayer('${esc(p.name)}',this)">
-      ${esc(p.name)}${debutBadge}${flag}${draftLabel}</div>`;
+      ${esc(cleanName)}${debutBadge}${aBadge}${flag}${draftLabel}</div>`;
   }).join('');
 }
 
