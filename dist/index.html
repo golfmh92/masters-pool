@@ -1192,7 +1192,7 @@ function renderStats() {
   if (!container) return;
 
   if (new Date() < TOURNAMENT_START) {
-    container.innerHTML = '<div class="tk-empty"><div class="tk-empty-icon">&#128202;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Stats sind ab Donnerstag verfügbar.</p></div>';
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Ab Mittwoch werden hier die Stats des Masters angezeigt.</p></div>';
     return;
   }
   const players = computeAllStats();
@@ -1327,17 +1327,20 @@ function renderAdmin() {
   if (!c || !S.isAdmin) return;
 
   const adminFilter = normalizeName(document.getElementById('adminFilter')?.value || '');
-  let allGolfers = [...S.golfers].sort((a, b) => a.name.localeCompare(b.name));
-  if (adminFilter) allGolfers = allGolfers.filter(g => normalizeName(g.name).includes(adminFilter));
-
   const adminHasVal = document.getElementById('adminFilter')?.value?.trim();
   let html = `<div style="position:relative;margin-bottom:12px">
     <input class="input" type="text" id="adminFilter" placeholder="Spieler suchen..." oninput="renderAdmin()" style="width:100%;display:block;padding-right:36px">
     <div onclick="document.getElementById('adminFilter').value='';document.getElementById('adminFilter').blur();renderAdmin()" style="display:${adminHasVal ? 'flex' : 'none'};position:absolute;right:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;align-items:center;justify-content:center">×</div>
   </div>`;
 
-  for (const g of allGolfers) {
-    const team = S.participants.find(p => p.id === g.participant_id);
+  // Drafted golfers with status controls
+  let allGolfers = [...S.golfers].sort((a, b) => a.name.localeCompare(b.name));
+  if (adminFilter) allGolfers = allGolfers.filter(g => fuzzyMatch(g.name, adminFilter));
+
+  if (allGolfers.length > 0) {
+    html += `<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px;letter-spacing:0.5px">GEDRAFTETE SPIELER (${allGolfers.length})</div>`;
+    for (const g of allGolfers) {
+      const team = S.participants.find(p => p.id === g.participant_id);
       const gs = golferStatus(g);
       const isManualWd = gs === 'wd' && !g.made_cut;
       const isManualDq = gs === 'dq';
@@ -1354,7 +1357,38 @@ function renderAdmin() {
           <button style="${btn(isManualDq, 'red')}" onclick="setGolferStatus('${g.id}','dq')">DQ</button>
         </div>
       </div>`;
+    }
   }
+
+  // Field list (all 91 Masters players)
+  if (S.fieldLoaded && S.mastersField.length > 0) {
+    const drafted = new Set(S.golfers.map(g => normalizeName(g.name)));
+    let fieldList = S.mastersField;
+    if (adminFilter) fieldList = fieldList.filter(f => fuzzyMatch(f.name, adminFilter));
+    const draftedCount = S.mastersField.filter(f => drafted.has(normalizeName(f.name))).length;
+
+    html += `<div style="font-size:12px;font-weight:600;color:var(--green);margin:16px 0 8px;letter-spacing:0.5px">MASTERS FELD (${draftedCount}/${S.mastersField.length} gedraftet)</div>`;
+    for (const f of fieldList) {
+      const isDrafted = drafted.has(normalizeName(f.name));
+      const draftedBy = isDrafted ? S.golfers.find(g => normalizeName(g.name) === normalizeName(f.name)) : null;
+      const team = draftedBy ? S.participants.find(p => p.id === draftedBy.participant_id) : null;
+      const teamLabel = team ? `<span style="font-size:10px;color:var(--gold);margin-left:4px">${esc(team.name)}</span>` : '';
+      const debutStar = f.debut ? '<span style="color:var(--gold);font-size:10px;margin-left:3px">★</span>' : '';
+      const isAmateur = f.name.includes('(a)');
+      const amateurBadge = isAmateur ? '<span style="font-size:9px;color:var(--text3);margin-left:3px">(a)</span>' : '';
+      const opacity = isDrafted ? '1' : '0.5';
+      const checkmark = isDrafted ? '<span style="color:var(--green);font-size:14px;font-weight:700">✓</span>' : '';
+
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:3px;opacity:${opacity}">
+        <div style="font-size:13px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name.replace(/\s*\(a\)\s*$/, ''))}${debutStar}${amateurBadge}${teamLabel}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:var(--text3)">${f.country || ''}</span>
+          ${checkmark}
+        </div>
+      </div>`;
+    }
+  }
+
   c.innerHTML = html;
 
   // Restore search focus
@@ -1473,7 +1507,7 @@ function renderPayoutsView() {
   if (!section) return;
 
   if (new Date() < TOURNAMENT_START) {
-    section.innerHTML = '<div class="empty"><div class="empty-icon">&#128176;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Payouts werden ab der ersten Runde berechnet</p></div>';
+    section.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Ab Mittwoch werden hier die Payouts berechnet.</p></div>';
     return;
   }
 
