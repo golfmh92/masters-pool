@@ -375,17 +375,19 @@ body::before{content:'';position:fixed;inset:0;background:
 
   <!-- Header -->
   <div class="app-header">
-    <div class="header-avatar" id="avatarBtn" onclick="toggleIdentityDropdown()">
-      <span id="avatarText">?</span>
+    <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div class="header-avatar" id="avatarBtn" onclick="toggleIdentityDropdown()" style="position:static;transform:none;width:30px;height:30px;font-size:12px">
+        <span id="avatarText">?</span>
+      </div>
+      <button class="header-admin" id="btnPush" style="position:static;width:24px;height:24px;display:none" onclick="togglePushDropdown()">
+        <svg viewBox="0 0 24 24" id="pushIcon" style="width:16px;height:16px"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
     <div class="header-title" id="headerTitle" onclick="const v=document.querySelector('.view.active');if(v)v.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer">THE MASTERS POOL</div>
     <div class="header-sub">April 2026</div>
     <div class="live-badge stale" id="liveBadge" style="display:none"><div class="live-dot"></div><span id="liveText">Live</span></div>
-    <button class="header-admin" id="btnPush" style="left:16px;right:auto;display:none" onclick="togglePushDropdown()">
-      <svg viewBox="0 0 24 24" id="pushIcon"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <div class="identity-dropdown" id="pushDropdown" style="left:16px;right:auto;width:220px"></div>
-    <div class="identity-dropdown" id="identityDropdown"></div>
+    <div class="identity-dropdown" id="pushDropdown" style="right:12px;width:220px"></div>
+    <div class="identity-dropdown" id="identityDropdown" style="right:12px"></div>
   </div>
 
   <!-- Views -->
