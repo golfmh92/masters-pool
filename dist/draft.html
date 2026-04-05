@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masters Pool Admin – Augusta 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5EFE0;
+  --card:#FFFFFF;
+  --card2:#FAF8F3;
+  --border:rgba(0,103,71,.1);
+  --green:#006747;
+  --green2:#00845C;
+  --gold:#C8A951;
+  --text:#1A2E1A;
+  --text2:#5A6A5A;
+  --text3:#8C9A8C;
+  --radius:12px;
+  --sidebar:220px;
+  --font-display:'Cormorant Garamond',Georgia,serif;
+  --font-body:'Outfit',system-ui,sans-serif;
+}
+html,body{height:100%;font-family:var(--font-body);background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ── Shell ── */
+.shell{display:flex;flex-direction:column;height:100vh}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,#006747,#004D35);border-bottom:3px solid var(--gold);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header-title{font-family:var(--font-display);font-size:30px;letter-spacing:4px;color:#fff}
+.header-sub{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:4px;text-transform:uppercase;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:10px}
+.login-status{font-size:12px;color:rgba(255,255,255,.5)}
+.btn{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-primary{background:var(--green);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-secondary{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.btn-light{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* ── Body ── */
+.body{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar Nav ── */
+.sidenav{width:var(--sidebar);background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;padding:16px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:rgba(0,103,71,.06);color:var(--green);border-left-color:var(--green);font-weight:600}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-sep{height:1px;background:var(--border);margin:8px 16px}
+
+/* ── Main Content ── */
+.main{flex:1;overflow-y:auto;padding:24px;display:block}
+.main::-webkit-scrollbar{width:6px}
+.main::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Draft layout: main becomes flex row when on draft page ── */
+.main.draft-layout{display:flex;gap:0;padding:0;overflow:hidden}
+.draft-content{flex:1;overflow-y:auto;padding:24px}
+.draft-content::-webkit-scrollbar{width:6px}
+.draft-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Field Panel (right, inline) ── */
+.field-panel{width:280px;flex-shrink:0;border-left:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;overflow:hidden}
+.field-panel-header{padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.field-panel-title{font-weight:600;font-size:14px;color:var(--green);margin-bottom:10px}
+.field-panel-search{width:100%}
+.field-panel-list{flex:1;overflow-y:auto;padding:8px 0}
+.field-panel-list::-webkit-scrollbar{width:4px}
+.field-panel-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── Field Panel Player Items ── */
+.panel-player{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);cursor:grab;transition:background .1s;user-select:none}
+.panel-player:last-child{border-bottom:none}
+.panel-player:hover{background:var(--bg)}
+.panel-player.drafted{opacity:.4;cursor:default}
+.panel-player.dragging{opacity:.5}
+
+.page{display:none}
+.page.active{display:block}
+
+.page-title{font-family:var(--font-display);font-size:26px;letter-spacing:3px;color:var(--green);margin-bottom:20px}
+.section-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-sm{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px}
+
+/* ── Form Elements ── */
+.input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;outline:none;font-family:var(--font-body)}
+.input:focus{border-color:var(--green);background:#fff}
+.input::placeholder{color:var(--text3)}
+select.input{cursor:pointer}
+.label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block}
+.form-row{display:flex;gap:10px;align-items:flex-end}
+.form-group{flex:1;display:flex;flex-direction:column}
+
+/* ── Tables ── */
+.table{width:100%;border-collapse:collapse}
+.table th{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;background:var(--card2)}
+.table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:var(--bg)}
+
+/* ── Draft Board ── */
+.draft-board{display:grid;gap:12px;align-items:start}
+.team-col{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .15s,background .15s}
+.team-col.drag-over{border:2px solid var(--gold);background:rgba(200,169,81,.04)}
+.team-header{padding:10px 14px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:space-between}
+.team-pos{font-family:var(--font-display);font-size:22px;color:rgba(255,255,255,.4);margin-right:8px}
+.team-name{font-weight:600;font-size:14px;color:#fff}
+.team-count{font-size:11px;color:rgba(255,255,255,.4)}
+.pick-list{padding:8px}
+.pick-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:3px;background:var(--bg)}
+.pick-item.latest{background:rgba(200,169,81,.08);border:1px solid rgba(200,169,81,.2)}
+.pick-item:last-child{margin-bottom:0}
+.pick-item .remove-pick{opacity:0;transition:opacity .15s}
+.pick-item:hover .remove-pick{opacity:1}
+.pick-round{width:18px;height:18px;border-radius:50%;background:var(--border);font-size:9px;font-weight:700;color:var(--text3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pick-name{font-size:13px;font-weight:500}
+.pick-empty{font-size:12px;color:var(--text3);padding:6px 8px;font-style:italic}
+.next-pick{background:rgba(200,169,81,.06);border:1px solid rgba(200,169,81,.2);border-radius:10px;padding:12px 16px;display:inline-flex;align-items:center;gap:12px;margin-bottom:20px}
+.next-pick-label{font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.next-pick-name{font-family:var(--font-display);font-size:22px;color:var(--gold);letter-spacing:2px}
+
+/* ── Field List (Spielerfeld page) ── */
+.field-player{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);transition:background .1s}
+.field-player:hover{background:var(--bg)}
+.field-player.drafted{opacity:.35}
+.field-player:last-child{border-bottom:none}
+
+/* ── Status Buttons ── */
+.status-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.status-btn.active-green{background:#dcfce7;color:#15803d;border-color:#86efac}
+.status-btn.active-orange{background:#ffedd5;color:#c2410c;border-color:#fdba74}
+.status-btn.active-red{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+.status-btn.inactive{background:var(--bg);color:var(--text3);border-color:var(--border)}
+
+/* ── Bonus ── */
+.bonus-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:8px;margin-bottom:6px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;opacity:0;transition:all .3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Login Overlay ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:340px;box-shadow:0 20px 40px rgba(0,0,0,.1)}
+.login-title{font-family:var(--font-display);font-size:28px;letter-spacing:3px;margin-bottom:6px;color:var(--green)}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title">The Masters Pool</div>
+      <div class="header-sub">Admin Draft Board — Augusta 2026</div>
+    </div>
+    <div class="header-right">
+      <span class="login-status" id="loginStatus">Nicht angemeldet</span>
+      <button class="btn btn-secondary" id="btnAdmin" onclick="toggleAdmin()">Admin Login</button>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- Sidebar -->
+    <div class="sidenav">
+      <div class="nav-item active" onclick="showPage('draft')" id="nav-draft"><span class="nav-icon">🏆</span>Draft Board</div>
+      <div class="nav-item" onclick="showPage('mitspieler')" id="nav-mitspieler"><span class="nav-icon">👥</span>Mitspieler</div>
+      <div class="nav-item" onclick="showPage('feld')" id="nav-feld"><span class="nav-icon">⛳</span>Spielerfeld</div>
+      <div class="nav-sep"></div>
+      <div class="nav-item" onclick="showPage('status')" id="nav-status"><span class="nav-icon">✂️</span>Cut / Status</div>
+      <div class="nav-item" onclick="showPage('bonus')" id="nav-bonus"><span class="nav-icon">⭐</span>Bonus</div>
+    </div>
+
+    <!-- Main -->
+    <div class="main" id="mainArea">
+
+      <!-- DRAFT BOARD -->
+      <div class="page active" id="page-draft">
+        <!-- When on draft page the main uses flex layout; draft content + field panel are siblings injected here -->
+      </div>
+
+      <!-- MITSPIELER -->
+      <div class="page" id="page-mitspieler">
+        <div class="page-title">Mitspieler</div>
+
+        <div class="card" id="addPlayerCard" style="display:none">
+          <div class="section-title" style="margin-top:0">Mitspieler hinzufügen</div>
+          <div class="form-row">
+            <div class="form-group">
+              <input class="input" type="text" id="inputName" placeholder="Name eingeben..." onkeydown="if(event.key==='Enter')addParticipant()">
+            </div>
+            <button class="btn btn-primary" onclick="addParticipant()">+ Hinzufügen</button>
+            <button class="btn btn-light" onclick="randomizeDraftOrder()" title="Reihenfolge auslosen">🎲 Auslosen</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <table class="table" id="participantsTable">
+            <thead><tr>
+              <th>#</th><th>Name</th><th>Draft Position</th><th id="thActions"></th>
+            </tr></thead>
+            <tbody id="participantsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SPIELERFELD -->
+      <div class="page" id="page-feld">
+        <div class="page-title">Spielerfeld</div>
+
+        <div class="card" id="feldAdminCard" style="display:none">
+          <div class="section-title" style="margin-top:0">Feld laden</div>
+          <div class="form-row">
+            <button class="btn btn-green" onclick="loadFieldFromESPN()">📡 Von ESPN laden</button>
+            <span style="font-size:13px;color:var(--text3);align-self:center" id="fieldStatus"></span>
+          </div>
+        </div>
+
+        <div class="card" style="padding:12px 16px;margin-bottom:12px">
+          <input class="input" type="text" id="fieldSearch" placeholder="Spieler suchen..." oninput="renderField()">
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="fieldList" style="max-height:600px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- STATUS -->
+      <div class="page" id="page-status">
+        <div class="page-title">Cut / Status</div>
+        <div class="card" style="padding:12px 16px;margin-bottom:12px">
+          <input class="input" type="text" id="statusSearch" placeholder="Spieler suchen..." oninput="renderStatus()">
+        </div>
+        <div class="card" style="padding:0">
+          <table class="table">
+            <thead><tr><th>Spieler</th><th>Team</th><th>Status</th></tr></thead>
+            <tbody id="statusBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BONUS -->
+      <div class="page" id="page-bonus">
+        <div class="page-title">Bonus</div>
+        <div class="card" style="padding:12px 16px;margin-bottom:12px">
+          <input class="input" type="text" id="bonusSearch" placeholder="Spieler suchen..." oninput="renderBonus()">
+        </div>
+        <div class="card" style="padding:0">
+          <table class="table">
+            <thead><tr><th>Spieler</th><th>Team</th><th>Bonus</th></tr></thead>
+            <tbody id="bonusBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /body -->
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Login Overlay -->
+<div class="overlay" id="loginOverlay" style="display:none">
+  <div class="login-box">
+    <div class="login-title">Admin Login</div>
+    <div class="login-sub">The Masters Pool</div>
+    <input class="input" type="email" id="loginEmail" placeholder="E-Mail" style="margin-bottom:10px" onkeydown="if(event.key==='Enter')doLogin()">
+    <input class="input" type="password" id="loginPass" placeholder="Passwort" style="margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-primary" style="width:100%;padding:10px" onclick="doLogin()">Anmelden</button>
+    <button class="btn btn-light" style="width:100%;padding:10px;margin-top:8px" onclick="document.getElementById('loginOverlay').style.display='none'">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  '',
+  ''
+);
+
+let S = { participants:[], golfers:[], scores:[], bonuses:[], field:[], isAdmin:false, userId:null };
+
+// ── Data ─────────────────────────────────────────────
+async function loadAll() {
+  const [p, g, s, b] = await Promise.all([
+    sb.from('masters_participants').select('*').order('draft_position',{ascending:true,nullsFirst:false}),
+    sb.from('masters_golfers').select('*').order('draft_round').order('draft_pick'),
+    sb.from('masters_scores').select('*'),
+    sb.from('masters_bonuses').select('*'),
+  ]);
+  S.participants = p.data || [];
+  S.golfers = g.data || [];
+  S.scores = s.data || [];
+  S.bonuses = b.data || [];
+}
+
+async function loadField() {
+  const { data } = await sb.from('masters_field').select('name,country').order('name');
+  S.field = data || [];
+  const fs = document.getElementById('fieldStatus');
+  if (fs) fs.textContent = S.field.length > 0 ? `${S.field.length} Spieler geladen` : 'Noch kein Feld';
+}
+
+// ── Navigation ────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+
+  const mainArea = document.getElementById('mainArea');
+  const draftWrapper = document.getElementById('draftContentWrapper');
+  const fieldPanel = document.getElementById('fieldPanelEl');
+
+  if (id === 'draft') {
+    mainArea.classList.add('draft-layout');
+    if (draftWrapper) draftWrapper.style.display = '';
+    if (fieldPanel) fieldPanel.style.display = '';
+  } else {
+    mainArea.classList.remove('draft-layout');
+    if (draftWrapper) draftWrapper.style.display = 'none';
+    if (fieldPanel) fieldPanel.style.display = 'none';
+  }
+
+  renderPage(id);
+}
+
+function renderPage(id) {
+  if (id === 'draft') renderDraftBoard();
+  if (id === 'mitspieler') renderMitspieler();
+  if (id === 'feld') renderField();
+  if (id === 'status') renderStatus();
+  if (id === 'bonus') renderBonus();
+}
+
+// ── DRAFT BOARD ───────────────────────────────────────
+function renderDraftBoard() {
+  const mainArea = document.getElementById('mainArea');
+  mainArea.classList.add('draft-layout');
+
+  // Ensure draft content wrapper exists
+  let draftContent = document.getElementById('draftContentWrapper');
+  let fieldPanelEl = document.getElementById('fieldPanelEl');
+
+  if (!draftContent) {
+    // Restructure: move page-draft content into a scrollable wrapper, add field panel
+    const pageDraft = document.getElementById('page-draft');
+    pageDraft.style.display = ''; // reset any inline style
+
+    draftContent = document.createElement('div');
+    draftContent.id = 'draftContentWrapper';
+    draftContent.className = 'draft-content';
+    mainArea.insertBefore(draftContent, pageDraft);
+
+    fieldPanelEl = document.createElement('div');
+    fieldPanelEl.id = 'fieldPanelEl';
+    fieldPanelEl.className = 'field-panel';
+    mainArea.appendChild(fieldPanelEl);
+
+    // Move page-draft into draftContent
+    draftContent.appendChild(pageDraft);
+  }
+
+  const pageDraft = document.getElementById('page-draft');
+  pageDraft.classList.add('active');
+
+  // Render the pick panel and board inside page-draft
+  const n = S.participants.length;
+
+  // Build inner HTML for page-draft
+  let panelHTML = '';
+  if (S.isAdmin) {
+    panelHTML = `<div class="card" style="padding:14px 16px;margin-bottom:16px" id="draftPickPanel">
+      <div class="section-title" style="margin-top:0">Pick vergeben</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="label">Team</label>
+          <select class="input" id="teamSelect"></select>
+        </div>
+        <div class="form-group" style="max-width:90px">
+          <label class="label">Runde</label>
+          <select class="input" id="roundSelect">
+            <option value="1">R1</option><option value="2">R2</option>
+            <option value="3">R3</option><option value="4">R4</option><option value="5">R5</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label">Spieler</label>
+          <input class="input" type="text" id="draftPlayerInput" placeholder="Name tippen oder rechts suchen..." oninput="filterField()">
+        </div>
+        <div>
+          <label class="label">&nbsp;</label>
+          <button class="btn btn-primary" onclick="confirmPick()">✓ Pick bestätigen</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  pageDraft.innerHTML = `<div class="page-title">Draft Board</div>
+    <div id="nextPickBanner"></div>
+    ${panelHTML}
+    <div id="draftBoard"></div>`;
+
+  // Banner
+  const banner = document.getElementById('nextPickBanner');
+  if (n === 0) {
+    banner.innerHTML = '';
+  } else {
+    const totalPicks = S.golfers.length;
+    const round = Math.floor(totalPicks / n) + 1;
+    const pickInRound = totalPicks % n;
+    const isReverse = round % 2 === 0;
+    const ordered = [...S.participants].sort((a,b) => (a.draft_position||99)-(b.draft_position||99));
+    const nextIdx = isReverse ? (n-1-pickInRound) : pickInRound;
+    const next = ordered[nextIdx];
+    banner.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      ${next ? `<div class="next-pick">
+        <div><div class="next-pick-label">Nächster Pick</div><div class="next-pick-name">${esc(next.name)}</div></div>
+        <div style="font-size:12px;color:var(--text3)">Runde ${round} · Pick ${totalPicks+1}</div>
+      </div>` : ''}
+      ${S.isAdmin && totalPicks === 0 ? `<button class="btn btn-light" onclick="randomizeDraftOrder()" style="font-size:13px">🎲 Reihenfolge auslosen</button>` : ''}
+    </div>`;
+
+    if (S.isAdmin) {
+      const sel = document.getElementById('teamSelect');
+      if (sel) {
+        sel.innerHTML = ordered.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+        if (next) sel.value = next.id;
+      }
+      const rs = document.getElementById('roundSelect');
+      if (rs) rs.value = Math.min(round, 5);
+    }
+  }
+
+  // Board
+  const board = document.getElementById('draftBoard');
+  if (n === 0) {
+    board.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:20px">Noch keine Mitspieler. Zuerst unter "Mitspieler" hinzufügen.</div>';
+  } else {
+    const ordered = [...S.participants].sort((a,b) => (a.draft_position||99)-(b.draft_position||99));
+    board.style.cssText = `display:grid;grid-template-columns:repeat(${Math.min(n,6)},1fr);gap:10px;align-items:start`;
+    const latestPick = S.golfers.length > 0
+      ? S.golfers.reduce((a,b) => (a.draft_round*100+a.draft_pick)>(b.draft_round*100+b.draft_pick)?a:b)
+      : null;
+
+    board.innerHTML = ordered.map(p => {
+      const picks = S.golfers.filter(g => g.participant_id === p.id)
+        .sort((a,b) => a.draft_round !== b.draft_round ? a.draft_round-b.draft_round : a.draft_pick-b.draft_pick);
+      const rows = picks.length > 0
+        ? picks.map(g => `<div class="pick-item ${latestPick&&g.id===latestPick.id?'latest':''}">
+            <div class="pick-round">${g.draft_round}</div>
+            <div class="pick-name" style="flex:1">${esc(g.name)}</div>
+            ${S.isAdmin ? `<button class="remove-pick" onclick="removePick('${g.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;line-height:1;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text3)'">✕</button>` : ''}
+          </div>`).join('')
+        : '<div class="pick-empty">Noch kein Pick</div>';
+      return `<div class="team-col"
+          ondragover="handleDragOver(event,this)"
+          ondragleave="handleDragLeave(event,this)"
+          ondrop="handleDrop(event,'${p.id}')">
+        <div class="team-header">
+          <div style="display:flex;align-items:center">
+            <div class="team-pos">${p.draft_position||'?'}</div>
+            <div class="team-name">${esc(p.name)}</div>
+          </div>
+          <div class="team-count">${picks.length}</div>
+        </div>
+        <div class="pick-list">${rows}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Render field panel
+  renderFieldPanel();
+}
+
+// ── FIELD PANEL ───────────────────────────────────────
+function renderFieldPanel() {
+  const panelEl = document.getElementById('fieldPanelEl');
+  if (!panelEl) return;
+
+  panelEl.innerHTML = `
+    <div class="field-panel-header">
+      <div class="field-panel-title">Spielerfeld</div>
+      <input class="input field-panel-search" type="text" id="fieldPanelSearch" placeholder="Suchen..." oninput="renderFieldPanelList()">
+    </div>
+    <div class="field-panel-list" id="fieldPanelList"></div>
+  `;
+
+  renderFieldPanelList();
+}
+
+function renderFieldPanelList() {
+  const searchEl = document.getElementById('fieldPanelSearch');
+  const q = searchEl ? searchEl.value.toLowerCase().trim() : '';
+  const drafted = new Set(S.golfers.map(g => g.name.toLowerCase().trim()));
+  let players = S.field;
+  if (q) players = players.filter(p => p.name.toLowerCase().includes(q));
+
+  const list = document.getElementById('fieldPanelList');
+  if (!list) return;
+
+  if (players.length === 0) {
+    list.innerHTML = S.field.length === 0
+      ? '<div style="padding:16px;color:var(--text3);font-size:13px">Kein Feld geladen.</div>'
+      : '<div style="padding:16px;color:var(--text3);font-size:13px">Keine Treffer</div>';
+    return;
+  }
+
+  list.innerHTML = players.map(p => {
+    const isDrafted = drafted.has(p.name.toLowerCase().trim());
+    const escapedName = esc(p.name);
+    const safeNameAttr = p.name.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+    return `<div class="panel-player ${isDrafted ? 'drafted' : ''}"
+      ${isDrafted ? '' : `draggable="true" ondragstart="handleDragStart(event,'${safeNameAttr}')"`}
+      onclick="${isDrafted ? '' : `selectPanelPlayer('${safeNameAttr}')`}"
+      title="${escapedName}">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isDrafted ? '✓ ' : ''}${escapedName}</div>
+        ${p.country ? `<div style="font-size:11px;color:var(--text3)">${esc(p.country)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectPanelPlayer(name) {
+  const input = document.getElementById('draftPlayerInput');
+  if (input) {
+    input.value = name;
+    input.focus();
+  }
+}
+
+// ── DRAG AND DROP ─────────────────────────────────────
+let draggedPlayerName = null;
+
+function handleDragStart(event, name) {
+  draggedPlayerName = name;
+  event.dataTransfer.effectAllowed = 'copy';
+  event.dataTransfer.setData('text/plain', name);
+  event.currentTarget.classList.add('dragging');
+}
+
+function handleDragOver(event, col) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'copy';
+  col.classList.add('drag-over');
+}
+
+function handleDragLeave(event, col) {
+  // Only remove if leaving the column entirely (not entering a child)
+  if (!col.contains(event.relatedTarget)) {
+    col.classList.remove('drag-over');
+  }
+}
+
+function handleDrop(event, participantId) {
+  event.preventDefault();
+  const col = event.currentTarget;
+  col.classList.remove('drag-over');
+
+  const name = draggedPlayerName || event.dataTransfer.getData('text/plain');
+  draggedPlayerName = null;
+
+  if (!name || !S.isAdmin) return;
+
+  // Set team select
+  const teamSel = document.getElementById('teamSelect');
+  if (teamSel) teamSel.value = participantId;
+
+  // Set player input
+  const playerInput = document.getElementById('draftPlayerInput');
+  if (playerInput) playerInput.value = name;
+
+  // Auto-set round based on current draft state
+  const n = S.participants.length;
+  if (n > 0) {
+    const totalPicks = S.golfers.length;
+    const round = Math.min(Math.floor(totalPicks / n) + 1, 5);
+    const rs = document.getElementById('roundSelect');
+    if (rs) rs.value = round;
+  }
+
+  confirmPick();
+}
+
+// ── filterField (keep for input oninput) ──────────────
+function filterField() {
+  renderFieldPanelList();
+}
+
+async function confirmPick() {
+  const name = document.getElementById('draftPlayerInput').value.trim();
+  const pid = document.getElementById('teamSelect').value;
+  const round = parseInt(document.getElementById('roundSelect').value);
+  if (!name || !pid) { showToast('Spieler und Team auswählen'); return; }
+  const existing = S.golfers.filter(g => g.draft_round === round).length;
+  const { error } = await sb.from('masters_golfers').insert({
+    user_id: S.userId, name, participant_id: pid, draft_round: round, draft_pick: existing+1, made_cut: true
+  });
+  if (error) { showToast('Fehler: ' + error.message); return; }
+  document.getElementById('draftPlayerInput').value = '';
+  await loadAll();
+  renderDraftBoard();
+  showToast(name + ' gedraftet ✓');
+}
+
+async function removePick(id) {
+  await sb.from('masters_golfers').delete().eq('id', id);
+  await loadAll();
+  renderDraftBoard();
+  showToast('Pick entfernt');
+}
+
+// ── MITSPIELER ────────────────────────────────────────
+function renderMitspieler() {
+  document.getElementById('addPlayerCard').style.display = S.isAdmin ? '' : 'none';
+  document.getElementById('thActions').textContent = S.isAdmin ? 'Aktionen' : '';
+  const tbody = document.getElementById('participantsBody');
+  if (S.participants.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text3);font-style:italic">Noch keine Mitspieler</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...S.participants]
+    .sort((a,b) => (a.draft_position||99)-(b.draft_position||99))
+    .map((p,i) => `<tr>
+      <td style="color:var(--text3);font-weight:500">${i+1}</td>
+      <td style="font-weight:600">${esc(p.name)}</td>
+      <td>
+        ${S.isAdmin
+          ? `<input type="number" class="input" style="width:70px" value="${p.draft_position||''}" placeholder="?" onchange="updateDraftPosition('${p.id}',this.value)">`
+          : `<span style="font-size:13px;color:var(--text2)">${p.draft_position||'?'}</span>`}
+      </td>
+      <td>
+        ${S.isAdmin ? `<button class="btn btn-sm btn-danger" onclick="removeParticipant('${p.id}')">Entfernen</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+async function addParticipant() {
+  const name = document.getElementById('inputName').value.trim();
+  if (!name) return;
+  const pos = S.participants.length + 1;
+  const { error } = await sb.from('masters_participants').insert({ user_id: S.userId, name, draft_position: pos });
+  if (error) { showToast('Fehler: ' + error.message); return; }
+  document.getElementById('inputName').value = '';
+  await loadAll();
+  renderMitspieler();
+  showToast(name + ' hinzugefügt');
+}
+
+async function removeParticipant(id) {
+  if (!confirm('Mitspieler wirklich entfernen?')) return;
+  await sb.from('masters_participants').delete().eq('id', id);
+  await loadAll();
+  renderMitspieler();
+  showToast('Entfernt');
+}
+
+async function updateDraftPosition(id, value) {
+  const pos = parseInt(value);
+  if (isNaN(pos) || pos < 1) return;
+  await sb.from('masters_participants').update({ draft_position: pos }).eq('id', id);
+  await loadAll();
+  renderMitspieler();
+}
+
+async function randomizeDraftOrder() {
+  const ids = S.participants.map(p => p.id);
+  for (let i = ids.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [ids[i],ids[j]] = [ids[j],ids[i]];
+  }
+  for (let i = 0; i < ids.length; i++) {
+    await sb.from('masters_participants').update({ draft_position: i+1 }).eq('id', ids[i]);
+  }
+  await loadAll();
+  renderMitspieler();
+  renderDraftBoard();
+  showToast('Reihenfolge ausgelost 🎲');
+}
+
+// ── FELD ──────────────────────────────────────────────
+function renderField() {
+  document.getElementById('feldAdminCard').style.display = S.isAdmin ? '' : 'none';
+  const q = document.getElementById('fieldSearch').value.toLowerCase().trim();
+  const drafted = new Set(S.golfers.map(g => g.name.toLowerCase().trim()));
+  let players = S.field;
+  if (q) players = players.filter(p => p.name.toLowerCase().includes(q));
+  const list = document.getElementById('fieldList');
+  if (players.length === 0) {
+    list.innerHTML = S.field.length === 0
+      ? '<div style="padding:20px;color:var(--text3);font-size:14px">Kein Feld geladen. Bitte via ESPN laden.</div>'
+      : '<div style="padding:16px;color:var(--text3);font-size:13px">Keine Treffer</div>';
+    return;
+  }
+  list.innerHTML = players.map(p => {
+    const isDrafted = drafted.has(p.name.toLowerCase().trim());
+    return `<div class="field-player ${isDrafted?'drafted':''}">
+      <div>
+        <div style="font-size:13px;font-weight:500">${esc(p.name)}</div>
+        ${p.country?`<div style="font-size:11px;color:var(--text3)">${esc(p.country)}</div>`:''}
+      </div>
+      <span style="font-size:11px;color:${isDrafted?'#15803d':'var(--text3)'};font-weight:600">${isDrafted?'✓ Gedraftet':''}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadFieldFromESPN() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Lade...';
+  try {
+    const resp = await fetch('https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard');
+    const json = await resp.json();
+    const events = json.events || [];
+    let evt = events.find(e => e.name && (e.name.toLowerCase().includes('masters') || e.name.toLowerCase().includes('augusta')));
+    if (!evt && events.length > 0) evt = events[0];
+    if (!evt) { showToast('Kein Event gefunden'); btn.disabled=false; btn.textContent='📡 Von ESPN laden'; return; }
+    const comp = (evt.competitions||[])[0];
+    if (!comp) { showToast('Keine Daten'); btn.disabled=false; btn.textContent='📡 Von ESPN laden'; return; }
+    const field = [];
+    for (const c of (comp.competitors||[])) {
+      const a = c.athlete||{};
+      const name = a.displayName||a.shortName||'';
+      if (!name) continue;
+      field.push({ name, country: a.flag?.alt||'' });
+    }
+    field.sort((a,b) => a.name.localeCompare(b.name));
+    // Save to Supabase
+    await sb.from('masters_field').delete().neq('id', 0);
+    const chunks = [];
+    for (let i=0; i<field.length; i+=50) chunks.push(field.slice(i,i+50));
+    for (const chunk of chunks) await sb.from('masters_field').insert(chunk);
+    S.field = field;
+    document.getElementById('fieldStatus').textContent = `${field.length} Spieler geladen`;
+    renderField();
+    showToast(`${field.length} Spieler geladen ✓`);
+  } catch(e) {
+    showToast('Fehler: ' + e.message);
+  }
+  btn.disabled=false; btn.textContent='📡 Von ESPN laden';
+}
+
+// ── STATUS ────────────────────────────────────────────
+function renderStatus() {
+  const q = document.getElementById('statusSearch').value.toLowerCase().trim();
+  const tbody = document.getElementById('statusBody');
+  let golfers = [...S.golfers];
+  if (q) golfers = golfers.filter(g => g.name.toLowerCase().includes(q));
+  if (golfers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text3);font-style:italic;padding:16px">Noch keine Spieler gedraftet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = golfers.map(g => {
+    const team = S.participants.find(p => p.id === g.participant_id);
+    const isDq = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
+    const status = isDq ? 'dq' : g.made_cut ? 'active' : 'wd';
+    return `<tr>
+      <td style="font-weight:500">${esc(g.name)}</td>
+      <td style="color:var(--text2)">${team ? esc(team.name) : '—'}</td>
+      <td>
+        ${S.isAdmin ? `
+          <div style="display:flex;gap:6px">
+            <button class="status-btn ${status==='active'?'active-green':'inactive'}" onclick="setStatus('${g.id}','active')">Aktiv</button>
+            <button class="status-btn ${status==='wd'?'active-orange':'inactive'}" onclick="setStatus('${g.id}','wd')">WD</button>
+            <button class="status-btn ${status==='dq'?'active-red':'inactive'}" onclick="setStatus('${g.id}','dq')">DQ</button>
+          </div>`
+        : `<span style="font-size:12px;font-weight:600;color:${status==='active'?'#15803d':status==='dq'?'#b91c1c':'#c2410c'}">${status==='active'?'Aktiv':status.toUpperCase()}</span>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function setStatus(golferId, status) {
+  const madeCut = status === 'active';
+  await sb.from('masters_golfers').update({ made_cut: madeCut }).eq('id', golferId);
+  if (status === 'dq') {
+    await sb.from('masters_scores').upsert({ golfer_id: golferId, round: 1, score: -1, user_id: S.userId }, { onConflict: 'golfer_id,round' });
+  } else {
+    const existing = S.scores.find(s => s.golfer_id === golferId && s.round === 1 && s.score === -1);
+    if (existing) await sb.from('masters_scores').delete().eq('id', existing.id);
+  }
+  await loadAll();
+  renderStatus();
+  showToast({ active:'Aktiv gesetzt', wd:'WD gesetzt', dq:'DQ gesetzt' }[status]);
+}
+
+// ── BONUS ─────────────────────────────────────────────
+function renderBonus() {
+  const q = document.getElementById('bonusSearch').value.toLowerCase().trim();
+  const tbody = document.getElementById('bonusBody');
+  let golfers = [...S.golfers].sort((a,b) => a.name.localeCompare(b.name));
+  if (q) golfers = golfers.filter(g => g.name.toLowerCase().includes(q));
+  if (golfers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text3);font-style:italic;padding:16px">Noch keine Spieler gedraftet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = golfers.map(g => {
+    const team = S.participants.find(p => p.id === g.participant_id);
+    const bonus = S.bonuses.find(b => b.golfer_id === g.id);
+    const isPar3 = bonus?.bonus_type === 'par3_win';
+    const isHio = bonus?.bonus_type === 'hio';
+    return `<tr>
+      <td style="font-weight:500">${esc(g.name)}</td>
+      <td style="color:var(--text2)">${team ? esc(team.name) : '—'}</td>
+      <td>
+        ${S.isAdmin ? `
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="status-btn ${isPar3 ? 'active-green' : 'inactive'}" onclick="toggleBonus('${g.id}','par3_win')">Par 3 (-2)</button>
+            <button class="status-btn ${isHio ? 'active-green' : 'inactive'}" onclick="toggleBonus('${g.id}','hio')">HiO (-1)</button>
+          </div>`
+        : bonus ? `<span style="font-size:12px;font-weight:600;color:#15803d">${isPar3 ? 'Par 3 (-2)' : 'HiO (-1)'}</span>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleBonus(golferId, type) {
+  const existing = S.bonuses.find(b => b.golfer_id === golferId);
+  if (existing) {
+    if (existing.bonus_type === type) {
+      await sb.from('masters_bonuses').delete().eq('id', existing.id);
+      showToast('Bonus entfernt');
+    } else {
+      await sb.from('masters_bonuses').update({ bonus_type: type, shots: type === 'par3_win' ? 2 : 1 }).eq('id', existing.id);
+      showToast('Bonus geändert');
+    }
+  } else {
+    const golfer = S.golfers.find(g => g.id === golferId);
+    await sb.from('masters_bonuses').insert({ user_id: S.userId, golfer_id: golferId, participant_id: golfer?.participant_id || null, bonus_type: type, shots: type === 'par3_win' ? 2 : 1 });
+    showToast('Bonus vergeben ✓');
+  }
+  await loadAll();
+  renderBonus();
+}
+
+
+
+// ── Admin Auth ────────────────────────────────────────
+function toggleAdmin() {
+  if (S.isAdmin) {
+    sb.auth.signOut();
+    S.isAdmin = false; S.userId = null;
+    document.getElementById('btnAdmin').textContent = 'Admin Login';
+    document.getElementById('loginStatus').textContent = 'Nicht angemeldet';
+    renderPage(document.querySelector('.nav-item.active').id.replace('nav-',''));
+    showToast('Abgemeldet');
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('loginEmail').focus(), 100);
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) return;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { showToast('Login fehlgeschlagen'); return; }
+  S.isAdmin = true; S.userId = data.user.id;
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('btnAdmin').textContent = 'Abmelden';
+  document.getElementById('loginStatus').textContent = email;
+  renderPage(document.querySelector('.nav-item.active').id.replace('nav-',''));
+  showToast('Angemeldet ✓');
+}
+
+// ── Utils ─────────────────────────────────────────────
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Auto-refresh ──────────────────────────────────────
+setInterval(async () => {
+  await loadAll();
+  const active = document.querySelector('.nav-item.active')?.id.replace('nav-','');
+  if (active) renderPage(active);
+}, 15000);
+
+// ── Init ──────────────────────────────────────────────
+(async () => {
+  await Promise.all([loadAll(), loadField()]);
+  // Initialise draft layout
+  const mainArea = document.getElementById('mainArea');
+  mainArea.classList.add('draft-layout');
+  renderDraftBoard();
+})();
+</script>
+</body>
+</html>
