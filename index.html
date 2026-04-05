@@ -814,7 +814,7 @@ const ESPN_GOLF_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/sc
 const TOURNAMENT_START = new Date('2026-04-10T00:00:00'); // Masters Thursday R1
 const CUT_TOP = 50; // Top 50 + Ties (Masters)
 const LIVE_REFRESH_MS = 15000; // 15 seconds when live
-const IDLE_REFRESH_MS = 600000; // 10 minutes when not playing
+const IDLE_REFRESH_MS = 1800000; // 30 minutes when not playing
 
 /* ===================== Supabase ===================== */
 const sb = supabase.createClient('https://wmqmufxyovfhxorzvrzn.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtcW11Znh5b3ZmaHhvcnp2cnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MjMxMTIsImV4cCI6MjA4ODM5OTExMn0.Q3yViDCbriTPgzJiHQBDd52m7skULMAYf7PrYr2Uais');
