@@ -245,7 +245,7 @@ select.input{cursor:pointer}
         </div>
         <div class="card" style="padding:0">
           <table class="table">
-            <thead><tr><th>Spieler</th><th>Team</th><th>Status</th></tr></thead>
+            <thead><tr><th>Spieler</th><th>Land</th><th>Team</th><th>Status</th></tr></thead>
             <tbody id="statusBody"></tbody>
           </table>
         </div>
@@ -306,7 +306,7 @@ async function loadAll() {
 }
 
 async function loadField() {
-  const { data } = await sb.from('masters_field').select('name,country').order('name');
+  const { data } = await sb.from('masters_field').select('name,country,debut').order('name');
   S.field = data || [];
   const fs = document.getElementById('fieldStatus');
   if (fs) fs.textContent = S.field.length > 0 ? `${S.field.length} Spieler geladen` : 'Noch kein Feld';
@@ -755,40 +755,73 @@ async function loadFieldFromESPN() {
 function renderStatus() {
   const q = document.getElementById('statusSearch').value.toLowerCase().trim();
   const tbody = document.getElementById('statusBody');
-  let golfers = [...S.golfers];
-  if (q) golfers = golfers.filter(g => g.name.toLowerCase().includes(q));
-  if (golfers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text3);font-style:italic;padding:16px">Noch keine Spieler gedraftet</td></tr>';
+
+  // Show all field players, not just drafted ones
+  let fieldList = S.field.length > 0 ? [...S.field] : [];
+  if (q) fieldList = fieldList.filter(f => f.name.toLowerCase().includes(q));
+
+  if (fieldList.length === 0 && S.golfers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text3);font-style:italic;padding:16px">Noch kein Feld geladen</td></tr>';
     return;
   }
-  tbody.innerHTML = golfers.map(g => {
-    const team = S.participants.find(p => p.id === g.participant_id);
-    const isDq = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
-    const status = isDq ? 'dq' : g.made_cut ? 'active' : 'wd';
-    return `<tr>
-      <td style="font-weight:500">${esc(g.name)}</td>
-      <td style="color:var(--text2)">${team ? esc(team.name) : '—'}</td>
-      <td>
-        ${S.isAdmin ? `
-          <div style="display:flex;gap:6px">
-            <button class="status-btn ${status==='active'?'active-green':'inactive'}" onclick="setStatus('${g.id}','active')">Aktiv</button>
-            <button class="status-btn ${status==='wd'?'active-orange':'inactive'}" onclick="setStatus('${g.id}','wd')">WD</button>
-            <button class="status-btn ${status==='dq'?'active-red':'inactive'}" onclick="setStatus('${g.id}','dq')">DQ</button>
-          </div>`
-        : `<span style="font-size:12px;font-weight:600;color:${status==='active'?'#15803d':status==='dq'?'#b91c1c':'#c2410c'}">${status==='active'?'Aktiv':status.toUpperCase()}</span>`}
-      </td>
+
+  // If no field, fall back to drafted golfers
+  if (fieldList.length === 0) {
+    fieldList = S.golfers.map(g => ({ name: g.name, country: '', debut: false }));
+    if (q) fieldList = fieldList.filter(f => f.name.toLowerCase().includes(q));
+  }
+
+  const draftedCount = fieldList.filter(f => S.golfers.some(g => normalizeName(g.name) === normalizeName(f.name))).length;
+
+  tbody.innerHTML = fieldList.map(f => {
+    const cleanName = f.name.replace(/\s*\(a\)\s*$/, '');
+    const isAmateur = /\(a\)\s*$/.test(f.name);
+    const debutStar = f.debut ? ' <span style="color:var(--gold);font-size:11px">★</span>' : '';
+    const aBadge = isAmateur ? ' <span style="color:var(--text3);font-size:10px">(a)</span>' : '';
+    const drafted = S.golfers.find(g => normalizeName(g.name) === normalizeName(f.name));
+    const team = drafted ? S.participants.find(p => p.id === drafted.participant_id) : null;
+    const teamLabel = team ? esc(team.name) : '<span style="color:var(--text3)">—</span>';
+
+    let statusHtml = '';
+    if (drafted) {
+      const isDq = S.scores.some(s => s.golfer_id === drafted.id && s.score === -1);
+      const isWd = S.scores.some(s => s.golfer_id === drafted.id && s.score === -2);
+      const status = isDq ? 'dq' : isWd ? 'wd' : !drafted.made_cut ? 'cut' : 'active';
+      statusHtml = S.isAdmin ? `
+        <div style="display:flex;gap:6px">
+          <button class="status-btn ${status==='active'?'active-green':'inactive'}" onclick="setStatus('${drafted.id}','active')">Aktiv</button>
+          <button class="status-btn ${status==='wd'?'active-orange':'inactive'}" onclick="setStatus('${drafted.id}','wd')">WD</button>
+          <button class="status-btn ${status==='dq'?'active-red':'inactive'}" onclick="setStatus('${drafted.id}','dq')">DQ</button>
+        </div>`
+      : `<span style="font-size:12px;font-weight:600;color:${status==='active'?'#15803d':status==='dq'?'#b91c1c':'#c2410c'}">${status==='active'?'Aktiv':status.toUpperCase()}</span>`;
+    } else {
+      statusHtml = '<span style="font-size:11px;color:var(--text3)">nicht gedraftet</span>';
+    }
+
+    const opacity = drafted ? '1' : '0.5';
+    return `<tr style="opacity:${opacity}">
+      <td style="font-weight:500">${esc(cleanName)}${debutStar}${aBadge}</td>
+      <td style="color:var(--text2)">${f.country || ''}</td>
+      <td style="color:var(--text2)">${teamLabel}</td>
+      <td>${statusHtml}</td>
     </tr>`;
   }).join('');
+}
+
+function normalizeName(name) {
+  return name.replace(/\s*\(a\)\s*$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 async function setStatus(golferId, status) {
   const madeCut = status === 'active';
   await sb.from('masters_golfers').update({ made_cut: madeCut }).eq('id', golferId);
+  const existingMarker = S.scores.find(s => s.golfer_id === golferId && s.round === 1 && (s.score === -1 || s.score === -2));
+  if (existingMarker) await sb.from('masters_scores').delete().eq('id', existingMarker.id);
   if (status === 'dq') {
-    await sb.from('masters_scores').upsert({ golfer_id: golferId, round: 1, score: -1, user_id: S.userId }, { onConflict: 'golfer_id,round' });
-  } else {
-    const existing = S.scores.find(s => s.golfer_id === golferId && s.round === 1 && s.score === -1);
-    if (existing) await sb.from('masters_scores').delete().eq('id', existing.id);
+    await sb.from('masters_scores').insert({ golfer_id: golferId, round: 1, score: -1, user_id: S.userId });
+  } else if (status === 'wd') {
+    await sb.from('masters_scores').insert({ golfer_id: golferId, round: 1, score: -2, user_id: S.userId });
   }
   await loadAll();
   renderStatus();
