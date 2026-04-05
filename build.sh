@@ -9,5 +9,6 @@ sed \
   index.html > dist/index.html
 
 cp sw.js dist/sw.js
+cp "The Masters Pool Logo.png" dist/
 
 echo "Build complete: dist/index.html + sw.js"
