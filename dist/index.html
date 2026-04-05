@@ -39,7 +39,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 /* ===== Background Texture ===== */
 body::before{content:'';position:fixed;inset:0;background:
   radial-gradient(ellipse at 20% 0%,rgba(0,103,71,.03) 0%,transparent 50%),
-  radial-gradient(ellipse at 80% 100%,rgba(200,169,81,.04) 0%,transparent 50%);
+  radial-gradient(ellipse at 80% 100%,rgba(200,169,81,.03) 0%,transparent 50%);
   pointer-events:none;z-index:0}
 
 /* ===== App Shell ===== */
@@ -48,8 +48,8 @@ body::before{content:'';position:fixed;inset:0;background:
 .safe-top{height:var(--safe-top);min-height:0;flex-shrink:0}
 
 /* ===== Header ===== */
-.app-header{padding:20px 20px 14px;text-align:center;flex-shrink:0;position:relative;background:var(--green);color:#fff}
-.app-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold))}
+.app-header{padding:20px 20px 14px;text-align:center;flex-shrink:0;position:relative;background:linear-gradient(135deg,#006747,#004D35);color:#fff}
+.app-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#C8A951,#E6D088,#C8A951)}
 .header-title{font-family:var(--font-display);font-size:32px;font-weight:400;color:#fff;letter-spacing:4px;text-transform:uppercase;line-height:1.1}
 .header-sub{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:5px;text-transform:uppercase;margin-top:2px;font-weight:400}
 .live-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-body);font-size:10px;font-weight:600;color:var(--gold);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
@@ -89,7 +89,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .lb-entry{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .lb-entry:active{transform:scale(.985)}
 .lb-entry.eliminated{opacity:.45}
-.lb-entry.rank-1{border-color:var(--gold);background:linear-gradient(135deg,rgba(230,57,70,.06),#fff)}
+.lb-entry.rank-1{border-color:var(--gold);background:linear-gradient(135deg,rgba(200,169,81,.08),#fff)}
 
 .lb-rank{width:32px;text-align:center;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text3);flex-shrink:0}
 .lb-entry.rank-1 .lb-rank{color:var(--gold);font-size:22px}
@@ -101,9 +101,9 @@ body::before{content:'';position:fixed;inset:0;background:
 
 .lb-score{text-align:right;flex-shrink:0}
 .lb-total{font-family:var(--font-display);font-size:24px;font-weight:700}
-.lb-total.under{color:#006747}
+.lb-total.under{color:#C0392B}
 .lb-total.over{color:#000}
-.lb-total.even{color:#2471A3}
+.lb-total.even{color:#2563EB}
 .lb-bonus{font-size:10px;color:var(--gold2);margin-top:1px}
 
 .eliminated-badge{display:inline-flex;align-items:center;gap:3px;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:6px}
@@ -157,7 +157,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .transfer-section{padding:12px 16px}
 .transfer-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px}
 .transfer-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px}
-.transfer-card.mine{background:var(--green-dim);border:1px solid rgba(27,58,92,.15)}
+.transfer-card.mine{background:var(--green-dim);border:1px solid rgba(0,103,71,.15)}
 .transfer-from{font-weight:500;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .transfer-arrow{color:var(--text3);flex-shrink:0;display:flex;align-items:center}
 .transfer-to{font-weight:600;font-size:13px;color:var(--green);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
@@ -187,8 +187,8 @@ body::before{content:'';position:fixed;inset:0;background:
 .golfer-name{flex:1;font-weight:500;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .golfer-rounds{display:flex;gap:3px}
 .golfer-rd{width:30px;text-align:center;font-size:11px;font-weight:500;padding:3px 0;border-radius:6px;background:var(--bg2)}
-.golfer-rd.birdie{color:#006747}
-.golfer-rd.even{color:#2471A3}
+.golfer-rd.birdie{color:#C0392B}
+.golfer-rd.even{color:#2563EB}
 .golfer-rd.bogey{color:#000}
 .golfer-cut{font-size:10px;color:var(--red);font-weight:600;margin-left:8px}
 .scorecard-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -199,9 +199,9 @@ body::before{content:'';position:fixed;inset:0;background:
 .scorecard th{background:var(--bg2);padding:6px 4px;text-align:center;font-weight:600;color:var(--text2);font-size:10px}
 .scorecard td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--border)}
 .scorecard .hole-num{color:var(--text3);font-size:10px}
-.scorecard .sc-birdie{color:#fff;background:#006747;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-birdie{color:#fff;background:#E63946;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
 .scorecard .sc-eagle{color:#000;background:#F4D03F;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
-.scorecard .sc-bogey{color:#fff;background:#2471A3;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.scorecard .sc-bogey{color:#fff;background:#2563EB;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
 .scorecard .sc-par{color:var(--text)}
 .scorecard .sc-dbl{color:#fff;background:#000;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
 .scorecard-round{font-family:var(--font-display);font-size:16px;font-weight:400;color:var(--green);margin:12px 0 6px;letter-spacing:1px}
@@ -231,16 +231,10 @@ body::before{content:'';position:fixed;inset:0;background:
 .mg-score{font-family:var(--font-display);font-size:16px;font-weight:700;line-height:1}
 .mg-score.under{color:var(--red)}
 .mg-score.over{color:#000}
-.mg-score.even{color:#2471A3}
+.mg-score.even{color:#2563EB}
 .mg-thru{font-size:9px;color:var(--text3);margin-top:1px}
 .mg-cut{font-size:8px;font-weight:700;color:var(--red);background:var(--red-bg);padding:1px 5px;border-radius:4px;margin-top:2px}
 
-.tk-emoji{font-size:18px;flex-shrink:0;width:24px;text-align:center}
-.tk-text{flex:1;color:var(--text);line-height:1.3}
-.tk-text strong{font-weight:600}
-.tk-meta{font-size:10px;color:var(--text3);flex-shrink:0;text-align:right;line-height:1.3}
-.tk-empty{text-align:center;padding:40px 20px;color:var(--text3)}
-.tk-empty-icon{font-size:40px;margin-bottom:8px}
 
 /* ===== Stats Tab ===== */
 .st-category{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
@@ -298,9 +292,9 @@ body::before{content:'';position:fixed;inset:0;background:
 .btn-block{width:100%}
 
 /* ===== Modal ===== */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;overscroll-behavior:contain}
 .modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{width:100%;max-width:500px;max-height:85vh;background:var(--card);border-radius:20px 20px 0 0;padding:8px 20px calc(var(--safe-bottom) + 20px);overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.modal{width:100%;max-width:500px;max-height:85vh;background:var(--card);border-radius:20px 20px 0 0;padding:8px 20px calc(var(--safe-bottom) + 20px);overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);overscroll-behavior:contain}
 .modal-overlay.open .modal{transform:translateY(0)}
 .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:8px auto 16px}
 .modal h2{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--green);margin-bottom:20px}
@@ -384,8 +378,8 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="header-avatar" id="avatarBtn" onclick="toggleIdentityDropdown()">
       <span id="avatarText">?</span>
     </div>
-    <div class="header-title" id="headerTitle">The Masters Pool</div>
-    <div class="header-sub">Augusta 2026</div>
+    <div class="header-title" id="headerTitle" onclick="const v=document.querySelector('.view.active');if(v)v.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer">THE MASTERS POOL</div>
+    <div class="header-sub">April 2026</div>
     <div class="live-badge stale" id="liveBadge" style="display:none"><div class="live-dot"></div><span id="liveText">Live</span></div>
     <button class="header-admin" id="btnPush" style="right:16px;display:none" onclick="togglePushDropdown()">
       <svg viewBox="0 0 24 24" id="pushIcon"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -400,31 +394,32 @@ body::before{content:'';position:fixed;inset:0;background:
     <!-- LEADERBOARD -->
     <div class="view active" id="viewLeaderboard">
       <div id="meineGolferSection"></div>
-      <input class="input" type="text" id="lbFilter" placeholder="Mitspieler suchen..." oninput="renderLeaderboard()" style="margin-bottom:12px;width:100%;display:block">
+      <div style="position:relative;margin-bottom:12px">
+        <input class="input" type="text" id="lbFilter" placeholder="Mitspieler suchen..." oninput="renderLeaderboard()" style="width:100%;display:block;padding-right:36px">
+        <div id="lbFilterClear" onclick="document.getElementById('lbFilter').value='';document.getElementById('lbFilter').blur();renderLeaderboard()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;align-items:center;justify-content:center">×</div>
+      </div>
       <div class="round-tabs" id="lbRoundTabs"></div>
       <div id="leaderboardList"></div>
     </div>
 
     <!-- TOURNAMENT LEADERBOARD -->
     <div class="view" id="viewTournament">
-      <input class="input" type="text" id="tournamentFilter" placeholder="Spieler suchen..." oninput="renderTournament()" style="margin-bottom:12px;width:100%;display:block">
+      <div style="position:relative;margin-bottom:12px">
+        <input class="input" type="text" id="tournamentFilter" placeholder="Spieler suchen..." oninput="renderTournament()" style="width:100%;display:block;padding-right:36px">
+        <div id="tournamentFilterClear" onclick="document.getElementById('tournamentFilter').value='';document.getElementById('tournamentFilter').blur();renderTournament()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;align-items:center;justify-content:center">×</div>
+      </div>
       <div id="tournamentList"></div>
     </div>
 
-    <!-- DRAFT -->
-    <div class="view" id="viewDraft">
-      <div id="draftContent"></div>
-    </div>
-
-    <!-- ADMIN -->
+    <!-- ADMIN (Draft + Spieler-Status + Bonus) -->
     <div class="view" id="viewAdmin">
       <div class="round-tabs" id="adminTabs" style="margin-bottom:12px">
-        <button class="round-tab active" onclick="setAdminTab('status')">Spieler</button>
-        <button class="round-tab" onclick="setAdminTab('draft')">Draft</button>
+        <button class="round-tab active" onclick="setAdminTab('draft')">Draft</button>
+        <button class="round-tab" onclick="setAdminTab('status')">Spieler</button>
         <button class="round-tab" onclick="setAdminTab('bonus')">Bonus</button>
       </div>
-      <div id="adminStatusContent"></div>
-      <div id="adminDraftContent" style="display:none"></div>
+      <div id="adminDraftContent"></div>
+      <div id="adminStatusContent" style="display:none"></div>
       <div id="adminBonusContent" style="display:none"></div>
     </div>
 
@@ -467,7 +462,10 @@ body::before{content:'';position:fixed;inset:0;background:
         </div>
         <div style="margin-top:8px;font-size:12px;color:var(--text3)">Pot = Mitspieler &times; 20&euro;</div>
       </div>
-      <div style="text-align:center;padding:30px 0 10px"><span style="font-size:11px;color:var(--text3);cursor:pointer;letter-spacing:.5px" onclick="toggleAdmin()">Admin</span></div>
+      <div style="text-align:center;padding:20px 0 10px">
+        <span style="display:inline-block;font-size:13px;color:var(--green);cursor:pointer;font-weight:500;padding:8px 16px;background:var(--green-dim);border-radius:8px" onclick="_tutorialSlide=0;showTutorial()">Einführung nochmal ansehen</span>
+      </div>
+      <div style="text-align:center;padding:10px 0 10px"><span style="font-size:11px;color:var(--text3);cursor:pointer;letter-spacing:.5px" onclick="toggleAdmin()">Admin</span></div>
     </div>
 
   </div>
@@ -490,10 +488,6 @@ body::before{content:'';position:fixed;inset:0;background:
       <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
       <span>Stats</span>
     </button>
-    <button class="tab hidden" data-tab="draft" id="tabDraft" onclick="switchTab('draft')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span>Draft</span>
-    </button>
     <button class="tab hidden" data-tab="admin" id="tabAdmin" onclick="switchTab('admin')">
       <svg viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Admin</span>
@@ -503,6 +497,184 @@ body::before{content:'';position:fixed;inset:0;background:
       <span>Regeln</span>
     </button>
   </nav>
+</div>
+
+<!-- PWA Install Prompt -->
+<div id="pwa-prompt-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.65);align-items:flex-end;justify-content:center">
+  <div style="background:var(--card);border-radius:28px 28px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:24px 20px 40px;margin:0 auto">
+    <!-- Handle -->
+    <div style="width:36px;height:4px;background:var(--bg3);border-radius:2px;margin:0 auto 20px"></div>
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:6px">
+      <div style="font-size:40px;margin-bottom:8px">📱</div>
+      <div style="font-size:11px;font-weight:600;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Für ein besseres Erlebnis</div>
+      <div style="font-family:var(--font-display);font-size:24px;color:var(--text)">Wie eine native App</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5">Füge den Masters Pool zum Home-Bildschirm hinzu — so startet die App ohne Browser-Leiste, genau wie eine echte App.</div>
+    </div>
+    <!-- Platform Tabs -->
+    <div style="display:flex;gap:0;background:var(--bg2);border-radius:12px;overflow:hidden;border:1px solid var(--border);margin:18px 0 20px">
+      <button id="pwa-tab-ios" onclick="pwaSelectTab('ios')" style="flex:1;padding:10px;border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;border-radius:0;transition:background .15s,color .15s">
+         iPhone (Safari)
+      </button>
+      <button id="pwa-tab-android" onclick="pwaSelectTab('android')" style="flex:1;padding:10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;border-radius:0;transition:background .15s,color .15s">
+        🤖 Android (Chrome)
+      </button>
+    </div>
+    <!-- iOS Steps -->
+    <div id="pwa-steps-ios" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Öffne Safari</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Die App muss im Safari-Browser geöffnet sein — andere Browser funktionieren für diesen Schritt nicht.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Tippe auf das Teilen-Symbol</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Das Quadrat mit dem Pfeil nach oben findest du in der unteren Symbolleiste.</div>
+          <div style="margin-top:10px;background:var(--bg2);border-radius:10px;padding:10px 14px;text-align:center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Teilen-Symbol</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„Zum Home-Bildschirm" wählen</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Scrolle im Teilen-Menü nach unten, bis du den Eintrag siehst.</div>
+          <div style="margin-top:10px;background:var(--bg2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;background:var(--card);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);flex-shrink:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text2)"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>
+            </div>
+            <div style="font-size:13px;font-weight:500;color:var(--text)">Zum Home-Bildschirm</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„Hinzufügen" bestätigen</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Tippe oben rechts auf „Hinzufügen" — fertig! Das Masters-Pool-Icon erscheint auf deinem Home-Bildschirm.</div>
+        </div>
+      </div>
+    </div>
+    <!-- Android Steps -->
+    <div id="pwa-steps-android" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Öffne Chrome</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Die App muss im Google Chrome Browser geöffnet sein.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Tippe auf das Menü ⋮</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Die drei Punkte oben rechts öffnen das Chrome-Menü.</div>
+          <div style="margin-top:10px;background:var(--bg2);border-radius:10px;padding:10px 14px;text-align:center">
+            <div style="font-size:22px;font-weight:900;color:var(--green);letter-spacing:2px">⋮</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Menü-Symbol</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„App installieren"</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Je nach Android-Version kann der Eintrag auch „Zum Startbildschirm hinzufügen" heißen.</div>
+          <div style="margin-top:10px;background:var(--bg2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <div style="font-size:18px">📲</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text)">App installieren</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„Installieren" bestätigen</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">Tippe auf „Installieren" — das Masters-Pool-Icon erscheint auf deinem Startbildschirm.</div>
+        </div>
+      </div>
+      </div>
+    </div>
+    <!-- CTA -->
+    <button onclick="closePWAPrompt(true)" style="width:100%;font-size:15px;padding:15px;margin-top:24px;background:var(--green);color:#fff;border:none;border-radius:12px;font-weight:600;font-family:var(--font-body);cursor:pointer">Verstanden</button>
+    <div onclick="closePWAPrompt(false)" style="text-align:center;font-size:12px;color:var(--text3);margin-top:12px;cursor:pointer">Später erinnern</div>
+  </div>
+</div>
+
+<!-- App Tutorial -->
+<div id="tutorial-modal" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.65);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:var(--radius);width:calc(100% - 48px);max-width:340px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <!-- Slides Container -->
+    <div id="tutorial-track" style="display:flex;transition:transform .3s ease;touch-action:pan-y">
+      <!-- Slide 1: Profil -->
+      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
+        <div style="margin-bottom:16px">
+          <div style="width:56px;height:56px;border-radius:50%;background:var(--gold);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto;border:3px solid var(--gold)">S1</div>
+        </div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Dein Profil</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">Tippe oben links auf den Kreis und wähle deinen Namen aus. Dann siehst du deine Golfer oben in der Rangliste und sie werden im Leaderboard hervorgehoben. Tipp: Ein Klick auf den Turniertitel scrollt immer nach ganz oben.</div>
+      </div>
+      <!-- Slide 2: Rangliste -->
+      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
+        <div style="margin-bottom:16px">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8m-4-4v4M6 3h12l-1.5 6.5a2 2 0 01-2 1.5h-5a2 2 0 01-2-1.5L6 3z"/><circle cx="12" cy="13" r="2"/></svg>
+        </div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Rangliste</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">Dein Team im Vergleich mit allen Mitspielern. Tippe auf einen Spieler, um die Golfer-Details und Runden-Scores zu sehen.</div>
+      </div>
+      <!-- Slide 2: Leaderboard -->
+      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
+        <div style="margin-bottom:16px">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l5 5-11 11-5-1 1-5L16 3z"/><path d="M14 7l3 3"/></svg>
+        </div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Leaderboard</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">Alle Turnier-Golfer mit Live-Scores. Filtere nach Runden (Do/Fr/Sa/So) oder sieh das Gesamt-Ergebnis. Tippe auf einen Golfer für die Scorecard.</div>
+      </div>
+      <!-- Slide 3: Payouts -->
+      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
+        <div style="margin-bottom:16px">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Payouts</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">Wer gewinnt was? Die aktuelle Gewinnverteilung basierend auf dem Ranking — aktualisiert sich live mit den Scores.</div>
+      </div>
+      <!-- Slide 4: Stats -->
+      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
+        <div style="margin-bottom:16px">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        </div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Stats</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">Detaillierte Statistiken zu allen Spielern — Birdies, Bogeys, Scoring-Durchschnitt und mehr.</div>
+      </div>
+      <!-- Slide 5: Regeln -->
+      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
+        <div style="margin-bottom:16px">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Regeln</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">Alles zum Spielmodus — Best 4 vor dem Cut, Best 3 danach, Bonus-System und Eliminierung. Jederzeit hier nachschlagen.</div>
+      </div>
+    </div>
+    <!-- Dots + Button -->
+    <div style="padding:0 24px 24px;text-align:center">
+      <div id="tutorial-dots" style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
+        <div class="tutorial-dot active" style="width:8px;height:8px;border-radius:50%;background:var(--green);transition:background .2s"></div>
+        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
+        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
+        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
+        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
+        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
+      </div>
+      <button id="tutorial-next-btn" onclick="tutorialNext()" style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer">Weiter</button>
+    </div>
+  </div>
 </div>
 
 <!-- Stats Slide-In Panel -->
@@ -518,7 +690,7 @@ body::before{content:'';position:fixed;inset:0;background:
 </div>
 
 <!-- FAB -->
-<button class="fab hidden" id="fab" onclick="onFabClick()">
+<button class="fab hidden" id="fab">
   <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 </button>
 
@@ -627,112 +799,6 @@ body::before{content:'';position:fixed;inset:0;background:
   </div>
 </div>
 
-<!-- PWA Install Prompt -->
-<div id="pwa-prompt-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.65);align-items:flex-end;justify-content:center">
-  <div style="background:var(--card);border-radius:28px 28px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:24px 20px 40px;margin:0 auto">
-    <div style="width:36px;height:4px;background:var(--bg3);border-radius:2px;margin:0 auto 20px"></div>
-    <div style="text-align:center;margin-bottom:6px">
-      <div style="font-size:40px;margin-bottom:8px">📱</div>
-      <div style="font-size:11px;font-weight:600;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Für ein besseres Erlebnis</div>
-      <div style="font-family:var(--font-display);font-size:24px;color:var(--text)">Wie eine native App</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5">Füge den Masters Pool zum Home-Bildschirm hinzu — so startet die App ohne Browser-Leiste, genau wie eine echte App.</div>
-    </div>
-    <div style="display:flex;gap:0;background:var(--bg2);border-radius:12px;overflow:hidden;border:1px solid var(--border);margin:18px 0 20px">
-      <button id="pwa-tab-ios" onclick="pwaSelectTab('ios')" style="flex:1;padding:10px;border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;border-radius:0;transition:background .15s,color .15s"> iPhone (Safari)</button>
-      <button id="pwa-tab-android" onclick="pwaSelectTab('android')" style="flex:1;padding:10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;border-radius:0;transition:background .15s,color .15s">🤖 Android (Chrome)</button>
-    </div>
-    <div id="pwa-steps-ios" style="display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Öffne Safari</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Die App muss im Safari-Browser geöffnet sein.</div></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Tippe auf das Teilen-Symbol</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Das Quadrat mit dem Pfeil nach oben in der unteren Symbolleiste.</div></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„Zum Home-Bildschirm" wählen</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Scrolle im Teilen-Menü nach unten.</div></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„Hinzufügen" bestätigen</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Das Masters-Pool-Icon erscheint auf deinem Home-Bildschirm.</div></div>
-      </div>
-    </div>
-    <div id="pwa-steps-android" style="display:none">
-      <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Öffne Chrome</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Die App muss im Google Chrome Browser geöffnet sein.</div></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Tippe auf das Menü ⋮</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Die drei Punkte oben rechts.</div></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„App installieren"</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Oder „Zum Startbildschirm hinzufügen".</div></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:14px;background:var(--card2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
-        <div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">„Installieren" bestätigen</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Das Masters-Pool-Icon erscheint auf deinem Startbildschirm.</div></div>
-      </div>
-      </div>
-    </div>
-    <button onclick="closePWAPrompt(true)" style="width:100%;font-size:15px;padding:15px;margin-top:24px;background:var(--green);color:#fff;border:none;border-radius:12px;font-weight:600;font-family:var(--font-body);cursor:pointer">Verstanden</button>
-    <div onclick="closePWAPrompt(false)" style="text-align:center;font-size:12px;color:var(--text3);margin-top:12px;cursor:pointer">Später erinnern</div>
-  </div>
-</div>
-
-<!-- App Tutorial -->
-<div id="tutorial-modal" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.65);align-items:center;justify-content:center">
-  <div style="background:var(--card);border-radius:var(--radius);width:calc(100% - 48px);max-width:340px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div id="tutorial-track" style="display:flex;transition:transform .3s ease;touch-action:pan-y">
-      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
-        <div style="margin-bottom:16px"><div style="width:56px;height:56px;border-radius:50%;background:var(--gold);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto;border:3px solid var(--gold)">MH</div></div>
-        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Dein Profil</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">Tippe oben links auf den Kreis und wähle deinen Namen aus. Dann siehst du deine Golfer oben in der Rangliste.</div>
-      </div>
-      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
-        <div style="margin-bottom:16px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8m-4-4v4M6 3h12l-1.5 6.5a2 2 0 01-2 1.5h-5a2 2 0 01-2-1.5L6 3z"/><circle cx="12" cy="13" r="2"/></svg></div>
-        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Rangliste</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">Dein Team im Vergleich mit allen Mitspielern. Tippe auf einen Eintrag für die Golfer-Details.</div>
-      </div>
-      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
-        <div style="margin-bottom:16px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l5 5-11 11-5-1 1-5L16 3z"/><path d="M14 7l3 3"/></svg></div>
-        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Leaderboard</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">Alle Turnier-Golfer mit Live-Scores. Tippe auf einen Golfer für die Scorecard.</div>
-      </div>
-      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
-        <div style="margin-bottom:16px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
-        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Payouts</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">Wer gewinnt was? Die aktuelle Gewinnverteilung — aktualisiert sich live.</div>
-      </div>
-      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
-        <div style="margin-bottom:16px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
-        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Stats</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">Detaillierte Statistiken zu allen Spielern — Birdies, Bogeys, Scoring-Durchschnitt und mehr.</div>
-      </div>
-      <div class="tutorial-slide" style="min-width:100%;padding:40px 24px 24px;text-align:center">
-        <div style="margin-bottom:16px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>
-        <div style="font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px">Regeln</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">Best 4 vor dem Cut, Best 3 danach, Bonus-System und Eliminierung. Jederzeit nachschlagen.</div>
-      </div>
-    </div>
-    <div style="padding:0 24px 24px;text-align:center">
-      <div id="tutorial-dots" style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
-        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--green);transition:background .2s"></div>
-        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
-        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
-        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
-        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
-        <div class="tutorial-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .2s"></div>
-      </div>
-      <button id="tutorial-next-btn" onclick="tutorialNext()" style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer">Weiter</button>
-    </div>
-  </div>
-</div>
-
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -740,14 +806,14 @@ body::before{content:'';position:fixed;inset:0;background:
 /* ===================== Constants ===================== */
 const PAR = 72; // Augusta National
 const ENTRY_FEE = 20;
-const CUT_TOP = 50; // Top 50 + Ties (Masters)
-const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Thursday
 const ESPN_GOLF_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Thursday
+const CUT_TOP = 50; // Top 50 + Ties (Masters)
 const LIVE_REFRESH_MS = 30000; // 30 seconds when live
 const IDLE_REFRESH_MS = 600000; // 10 minutes when not playing
 
 /* ===================== Supabase ===================== */
-const sb = supabase.createClient('', '');
+const sb = supabase.createClient('https://wmqmufxyovfhxorzvrzn.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtcW11Znh5b3ZmaHhvcnp2cnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MjMxMTIsImV4cCI6MjA4ODM5OTExMn0.Q3yViDCbriTPgzJiHQBDd52m7skULMAYf7PrYr2Uais');
 
 /* ===================== State ===================== */
 let S = {
@@ -758,22 +824,19 @@ let S = {
   isAdmin: false,
   userId: null,
   activeTab: 'leaderboard',
-  selectedTeam: null,
-  scoringRound: 1,
+  _adminTab: 'draft',
   lbRound: 0,
   myName: '',
   // Live scoring
-  liveData: null,
   liveScores: {},
   liveEventName: '',
   liveLastUpdate: null,
   liveTimer: null,
   liveActive: false,
-  tournamentLive: false,
-  tournamentFinished: false,
   // Masters field
   mastersField: [],      // [{name, country, rank}] from ESPN
   fieldLoaded: false,
+  // Live ticker
 };
 
 /* ===================== Init ===================== */
@@ -841,7 +904,6 @@ function setAdmin(yes, uid) {
   S.isAdmin = yes;
   S.userId = uid;
   // Admin button removed — login via long-press on title
-  document.getElementById('tabDraft').classList.toggle('hidden', !yes);
   document.getElementById('tabAdmin').classList.toggle('hidden', !yes);
   document.getElementById('fab').classList.toggle('hidden', !yes || !['draft','leaderboard'].includes(S.activeTab));
 }
@@ -886,12 +948,15 @@ function calcTeamRoundScore(participantId, round) {
     const sc = getGolferScore(g.id, round);
     let toPar = null;
     if (sc !== null) {
+      // Completed round score
       toPar = sc - PAR;
     } else if (g._live && g._live.currentRound === round && !g._live.finished) {
+      // Mid-round: use live round toPar
       const rtp = g._live['r' + round + '_toPar'];
       if (rtp !== undefined && rtp !== null) toPar = rtp;
     }
     if (toPar !== null) {
+      // Bonus applies only in R1
       const bonus = round === 1 ? getGolferBonus(g.id) : 0;
       roundScores.push(toPar - bonus);
     }
@@ -912,6 +977,7 @@ function calcTeamTotal(participantId) {
   return hasAny ? total : null;
 }
 
+// Returns 'active', 'cut', 'wd', or 'dq'
 function golferStatus(g) {
   if (!g.made_cut) {
     const dqMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
@@ -939,26 +1005,22 @@ function checkEliminated(participantId) {
 }
 
 function getTeamBonusTotal(participantId) {
+  // Sum bonuses only for golfers that are active (not wd/dq/cut)
   const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
   let total = 0;
   for (const g of teamGolfers) {
-    if (isGolferOut(g)) continue;
+    if (isGolferOut(g)) continue; // Bonus lost if golfer is out
     total += getGolferBonus(g.id);
   }
   return total;
 }
 
-function getGolferBonus(golferId) {
-  return S.bonuses.filter(b => b.golfer_id === golferId).reduce((sum, b) => sum + b.shots, 0);
-}
-
 function calcTeamTotalLive(participantId) {
-  // During live play: use best N golfers' ESPN toPar for ranking
+  // Fallback for when no round scores available: use overall ESPN toPar
   const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
   const hasLive = teamGolfers.some(g => g._live);
   if (!hasLive) return null;
 
-  // Determine how many count (simplified: best 4 before cut, best 3 after)
   const hasCutData = teamGolfers.some(g => g._live && g._live.status === 'cut');
   const count = hasCutData ? 3 : 4;
 
@@ -978,12 +1040,13 @@ function getRanking() {
     const eliminated = checkEliminated(p.id);
     const bonus = getTeamBonusTotal(p.id);
     const rounds = [1,2,3,4].map(r => calcTeamRoundScore(p.id, r));
+    // Sum round scores (now includes mid-round live data + R1 bonus)
     let total = null;
     let hasAny = false;
     for (const rs of rounds) {
       if (rs !== null) { total = (total || 0) + rs; hasAny = true; }
     }
-    // If no round scores yet, fall back to live toPar ranking
+    // Fallback: if no round data at all, use overall live toPar
     if (!hasAny) {
       const totalLive = calcTeamTotalLive(p.id);
       if (totalLive !== null) { total = totalLive; hasAny = true; }
@@ -1112,10 +1175,12 @@ function computeAllStats() {
 function toggleStCategory(el) {
   const body = el.querySelector('.st-body');
   if (el.classList.contains('open')) {
+    // Close: set explicit height first, then animate to 0
     body.style.maxHeight = body.scrollHeight + 'px';
     requestAnimationFrame(() => { body.style.maxHeight = '0'; });
     el.classList.remove('open');
   } else {
+    // Open: animate to scrollHeight, then remove inline style
     el.classList.add('open');
     body.style.maxHeight = body.scrollHeight + 'px';
     body.addEventListener('transitionend', () => { if (el.classList.contains('open')) body.style.maxHeight = 'none'; }, { once: true });
@@ -1127,10 +1192,9 @@ function renderStats() {
   if (!container) return;
 
   if (new Date() < TOURNAMENT_START) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128202;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Stats werden ab der ersten Runde berechnet</p></div>';
+    container.innerHTML = '<div class="tk-empty"><div class="tk-empty-icon">&#128202;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Stats sind ab Donnerstag verfügbar.</p></div>';
     return;
   }
-
   const players = computeAllStats();
   if (players.length === 0) {
     container.innerHTML = '<div class="tk-empty"><div class="tk-empty-icon">&#128202;</div><h3>Keine Stats</h3><p>Stats werden berechnet sobald Live-Daten vorhanden sind</p></div>';
@@ -1181,6 +1245,7 @@ function renderStats() {
   });
 
   container.innerHTML = html;
+  // Set initial height for open categories
   container.querySelectorAll('.st-category.open .st-body').forEach(b => { b.style.maxHeight = 'none'; });
 }
 
@@ -1263,31 +1328,36 @@ function renderAdmin() {
 
   const adminFilter = normalizeName(document.getElementById('adminFilter')?.value || '');
   let allGolfers = [...S.golfers].sort((a, b) => a.name.localeCompare(b.name));
-  if (adminFilter) allGolfers = allGolfers.filter(g => fuzzyMatch(g.name, adminFilter));
+  if (adminFilter) allGolfers = allGolfers.filter(g => normalizeName(g.name).includes(adminFilter));
 
-  let html = '<input class="input" type="text" id="adminFilter" placeholder="Spieler suchen..." oninput="renderAdmin()" style="margin-bottom:12px;width:100%;display:block">';
+  const adminHasVal = document.getElementById('adminFilter')?.value?.trim();
+  let html = `<div style="position:relative;margin-bottom:12px">
+    <input class="input" type="text" id="adminFilter" placeholder="Spieler suchen..." oninput="renderAdmin()" style="width:100%;display:block;padding-right:36px">
+    <div onclick="document.getElementById('adminFilter').value='';document.getElementById('adminFilter').blur();renderAdmin()" style="display:${adminHasVal ? 'flex' : 'none'};position:absolute;right:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;align-items:center;justify-content:center">×</div>
+  </div>`;
 
   for (const g of allGolfers) {
     const team = S.participants.find(p => p.id === g.participant_id);
-    const gs = golferStatus(g);
-    const isManualWd = gs === 'wd' && !g.made_cut;
-    const isManualDq = gs === 'dq';
-    const isAktiv = !isManualWd && !isManualDq;
-    const btn = (active, color) => `padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${active ? `background:var(--${color});color:#fff` : 'background:var(--bg);color:var(--text2)'}`;
-    const mcLabel = gs === 'cut' ? ' <span style="font-size:10px;color:var(--red)">(MC)</span>' : '';
-    const teamLabel = team ? `<span style="font-size:10px;color:var(--gold);margin-left:4px">${esc(team.name)}</span>` : '';
+      const gs = golferStatus(g);
+      const isManualWd = gs === 'wd' && !g.made_cut;
+      const isManualDq = gs === 'dq';
+      const isAktiv = !isManualWd && !isManualDq;
+      const btn = (active, color) => `padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);${active ? `background:var(--${color});color:#fff` : 'background:var(--bg);color:var(--text2)'}`;
+      const mcLabel = gs === 'cut' ? ' <span style="font-size:10px;color:var(--red)">(MC)</span>' : '';
+      const teamLabel = team ? `<span style="font-size:10px;color:var(--gold);margin-left:4px">${esc(team.name)}</span>` : '';
 
-    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
-      <div style="font-size:13px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}${teamLabel}${mcLabel}</div>
-      <div style="display:flex;gap:4px">
-        <button style="${btn(isAktiv, 'green')}" onclick="setGolferStatus('${g.id}','active')">Aktiv</button>
-        <button style="${btn(isManualWd, 'red')}" onclick="setGolferStatus('${g.id}','wd')">WD</button>
-        <button style="${btn(isManualDq, 'red')}" onclick="setGolferStatus('${g.id}','dq')">DQ</button>
-      </div>
-    </div>`;
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
+        <div style="font-size:13px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}${teamLabel}${mcLabel}</div>
+        <div style="display:flex;gap:4px">
+          <button style="${btn(isAktiv, 'green')}" onclick="setGolferStatus('${g.id}','active')">Aktiv</button>
+          <button style="${btn(isManualWd, 'red')}" onclick="setGolferStatus('${g.id}','wd')">WD</button>
+          <button style="${btn(isManualDq, 'red')}" onclick="setGolferStatus('${g.id}','dq')">DQ</button>
+        </div>
+      </div>`;
   }
   c.innerHTML = html;
 
+  // Restore search focus
   const input = document.getElementById('adminFilter');
   if (input && adminFilter) { input.value = adminFilter; input.setSelectionRange(adminFilter.length, adminFilter.length); input.focus(); }
 }
@@ -1301,8 +1371,10 @@ async function setGolferStatus(golferId, status) {
   if (error) { showToast('Fehler: ' + error.message); return; }
 
   // DQ marker: score -1 in R1, WD marker: score -2 in R1
+  // First remove any existing DQ/WD marker
   const existingMarker = S.scores.find(s => s.golfer_id === golferId && s.round === 1 && (s.score === -1 || s.score === -2));
   if (existingMarker) await sb.from('masters_scores').delete().eq('id', existingMarker.id);
+  // Then set new marker if needed
   if (status === 'dq') {
     await sb.from('masters_scores').insert({ golfer_id: golferId, round: 1, score: -1, user_id: S.userId });
   } else if (status === 'wd') {
@@ -1323,10 +1395,10 @@ async function setGolferStatus(golferId, status) {
 function setAdminTab(tab) {
   S._adminTab = tab;
   document.querySelectorAll('#adminTabs .round-tab').forEach((b, i) => {
-    b.classList.toggle('active', ['status','draft','bonus'][i] === tab);
+    b.classList.toggle('active', ['draft','status','bonus'][i] === tab);
   });
-  document.getElementById('adminStatusContent').style.display = tab === 'status' ? '' : 'none';
   document.getElementById('adminDraftContent').style.display = tab === 'draft' ? '' : 'none';
+  document.getElementById('adminStatusContent').style.display = tab === 'status' ? '' : 'none';
   document.getElementById('adminBonusContent').style.display = tab === 'bonus' ? '' : 'none';
 }
 
@@ -1334,6 +1406,7 @@ function renderAdminBonus() {
   const c = document.getElementById('adminBonusContent');
   if (!c || !S.isAdmin) return;
 
+  // Golfer select
   let optHtml = '';
   for (const p of S.participants) {
     const golfers = S.golfers.filter(g => g.participant_id === p.id);
@@ -1353,6 +1426,7 @@ function renderAdminBonus() {
     <button class="btn btn-primary btn-block" onclick="addBonus()">Bonus hinzufügen</button>
   </div>`;
 
+  // Existing bonuses
   if (S.bonuses.length > 0) {
     html += '<div style="font-family:var(--font-display);font-size:16px;color:var(--green);margin-bottom:8px">Vergebene Boni</div>';
     S.bonuses.forEach(b => {
@@ -1371,6 +1445,11 @@ function renderAdminBonus() {
   c.innerHTML = html;
 }
 
+// Golfer bonus: sum of shots for a specific golfer
+function getGolferBonus(golferId) {
+  return S.bonuses.filter(b => b.golfer_id === golferId).reduce((sum, b) => sum + b.shots, 0);
+}
+
 function render() {
   updateIdentityBar();
   renderLeaderboard();
@@ -1378,35 +1457,13 @@ function render() {
   _statsCache = [];
   renderStats();
   renderPayoutsView();
-  renderDraft();
-  if (S.isAdmin) { renderAdmin(); renderAdminBonus(); }
+  if (S.isAdmin) { renderDraft(); renderAdmin(); renderAdminBonus(); }
   updateFab();
 }
 
 function setLbRound(r) {
   S.lbRound = r;
   renderLeaderboard();
-}
-
-function getCountingGolfers(participantId, round) {
-  const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
-  const count = round <= 2 ? 4 : 3;
-  const withScores = teamGolfers
-    .map(g => {
-      const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
-      const sc = getGolferScore(g.id, round);
-      return { ...g, roundScore: sc, isCut };
-    })
-    .filter(g => !g.isCut || round <= 2);
-  const scored = withScores.filter(g => g.roundScore !== null).sort((a, b) => a.roundScore - b.roundScore);
-  const countingIds = new Set(scored.slice(0, count).map(g => g.id));
-  return withScores.map(g => ({
-    name: g.name,
-    score: g.roundScore,
-    isCounting: countingIds.has(g.id),
-    isCut: g.isCut,
-    thru: g._live ? g._live.thru : null
-  }));
 }
 
 function renderPayoutsView() {
@@ -1683,6 +1740,8 @@ function renderMeineGolfer() {
   container.innerHTML = html;
 }
 
+
+
 function renderLeaderboard() {
   renderMeineGolfer();
   // Preserve open state
@@ -1697,9 +1756,12 @@ function renderLeaderboard() {
 
 
 
-  // Filter by search
-  const lbFilterVal = (document.getElementById('lbFilter')?.value || '').toLowerCase().trim();
-  const filteredRanking = lbFilterVal ? ranking.filter(t => t.name.toLowerCase().includes(lbFilterVal)) : ranking;
+  // Filter by search (normalize to match accented names like Åberg/Âberg)
+  const lbFilterEl = document.getElementById('lbFilter');
+  const lbFilterVal = normalizeName(lbFilterEl?.value || '');
+  const lbClear = document.getElementById('lbFilterClear');
+  if (lbClear) lbClear.style.display = lbFilterEl?.value?.trim() ? 'flex' : 'none';
+  const filteredRanking = lbFilterVal ? ranking.filter(t => normalizeName(t.name).includes(lbFilterVal)) : ranking;
 
   // Round tabs
   const days = ['Gesamt','Do','Fr','Sa','So'];
@@ -1737,7 +1799,7 @@ function renderLeaderboard() {
   });
 
   function renderLbEntry(t) {
-    const trophyIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C8A951" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 01-2-2V5h4"/><path d="M18 9h2a2 2 0 002-2V5h-4"/><path d="M4 5h16v4a6 6 0 01-6 6h-4a6 6 0 01-6-6V5z"/><path d="M12 15v3"/><path d="M8 21h8"/></svg>`;
+    const trophyIcon = '🧥';
     const rankDisplay = t.isEliminated ? '&times;' : (t._rank === 1 ? trophyIcon : t._rank);
     const isMine = S.myName && t.name === S.myName;
     const isFav = S.favorites && S.favorites.has(t.name);
@@ -1791,7 +1853,7 @@ function renderLeaderboard() {
 
       expandHtml = '<div class="lb-expand-inner">';
       if (rd === 0) {
-        expandHtml += '<div class="round-headers" style="padding-left:0"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:40px">Live</span></div>';
+        expandHtml += '<div class="round-headers" style="padding:0 0 6px"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:40px">Σ</span></div>';
         expandHtml += sortedTeamGolfers.map(g => {
           const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
           const golferBonus = getGolferBonus(g.id);
@@ -1801,6 +1863,7 @@ function renderLeaderboard() {
             const rel = sc !== null ? sc - PAR - bonus : null;
             const sCls = scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
+            // Mid-round: show toPar + thru instead of score
             if (g._live && g._live.currentRound === r && !g._live.finished) {
               const rtp = g._live['r' + r + '_toPar'] !== undefined ? g._live['r' + r + '_toPar'] : g._live.toPar;
               const midBonusBadge = r === 1 && bonus > 0 ? `<div style="font-size:8px;color:var(--gold2);line-height:1;margin-top:2px">★-${bonus}</div>` : '';
@@ -1831,6 +1894,7 @@ function renderLeaderboard() {
           const sCls = scoreClass(rel);
           const counting = countingMap[g.id + '_' + rd];
           const thru = (g._live && g._live.thru && !isCut) ? g._live.thru : '';
+          // Show toPar + thru if no final round score yet and live data available
           const hasRoundScore = sc !== null;
           const liveInfo = (!hasRoundScore && g._live && !isCut)
             ? `<span style="font-size:12px;font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</span>${thru ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${thru}</span>` : ''}`
@@ -1879,86 +1943,8 @@ function renderLeaderboard() {
   });
 }
 
-function renderTeams() {
-  const container = document.getElementById('teamsList');
-
-  if (S.participants.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128101;</div><h3>Keine Mitspieler</h3></div>';
-    return;
-  }
-
-  const filterVal = (document.getElementById('teamsFilter')?.value || '').toLowerCase().trim();
-  const sorted = [...S.participants].sort((a, b) => a.name.localeCompare(b.name));
-  const filtered = filterVal ? sorted.filter(p => p.name.toLowerCase().includes(filterVal)) : sorted;
-
-  let html = '';
-  for (const p of filtered) {
-    const teamGolfers = S.golfers.filter(g => g.participant_id === p.id);
-    const total = calcTeamTotal(p.id);
-    const bonus = getTeamBonusTotal(p.id);
-    const elim = checkEliminated(p.id);
-    const totalCls = total !== null ? (total < 0 ? 'under' : total > 0 ? 'over' : 'even') : '';
-    const elimBadge = elim ? ' <span class="eliminated-badge">ELIMINATED</span>' : '';
-    const bonusHtml = bonus > 0 ? `<span style="font-size:11px;color:var(--gold2);font-family:var(--font-body);font-weight:400;margin-left:4px">(-${bonus})</span>` : '';
-
-    const isMine = S.myName && p.name === S.myName;
-    html += `<div class="team-card${isMine ? ' mine' : ''}${elim ? ' eliminated' : ''}">
-      <div class="team-card-header">
-        <div class="team-card-name">${esc(p.name)}${elimBadge}</div>
-        <div class="team-card-score ${totalCls}">${fmtScore(total)}${bonusHtml}</div>
-      </div>
-      <div class="team-card-body">`;
-
-    if (teamGolfers.length === 0) {
-      html += '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Noch keine Spieler gedraftet</div>';
-    } else {
-      // Determine counting golfers
-      const countingMap = {};
-      for (let r = 1; r <= 4; r++) {
-        const count = r <= 2 ? 4 : 3;
-        const withScores = teamGolfers
-          .filter(g => golferStatus(g) !== 'wd' && (r < 3 || g.made_cut))
-          .map(g => ({ id: g.id, score: getGolferScore(g.id, r) }))
-          .filter(x => x.score !== null)
-          .sort((a, b) => a.score - b.score);
-        withScores.slice(0, count).forEach(x => { countingMap[x.id + '_' + r] = true; });
-      }
-
-      html += `<div class="round-headers"><span>R1</span><span>R2</span><span>R3</span><span>R4</span><span style="width:40px">Live</span></div>`;
-      html += teamGolfers.map(g => {
-        const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
-        const cutCls = isCut ? 'cut' : '';
-        const rounds = [1,2,3,4].map(r => {
-          const sc = getGolferScore(g.id, r);
-          const rel = sc !== null ? sc - PAR : null;
-          const cls = scoreClass(rel);
-          const counting = countingMap[g.id + '_' + r];
-          return `<div class="golfer-rd ${cls}" style="height:auto;${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
-        }).join('');
-        const liveHtml = g._live
-          ? `<div style="width:40px;text-align:center;font-size:11px;line-height:1.2">
-              <div style="font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</div>
-              ${g._live.thru && g._live.thru !== 'F' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
-            </div>`
-          : '<div style="width:40px"></div>';
-        const cutBadgeMg = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
-        return `<div class="golfer-row ${cutCls}">
-          <div class="golfer-name">${esc(g.name)}${cutBadgeMg}</div>
-          <div class="golfer-rounds">${rounds}</div>
-          ${liveHtml}
-        </div>`;
-      }).join('');
-    }
-
-    html += '</div></div>';
-  }
-
-  container.innerHTML = html;
-}
-
 function renderDraft() {
-  const c = document.getElementById('draftContent');
-  const adminDraft = document.getElementById('adminDraftContent');
+  const c = document.getElementById('adminDraftContent');
   let html = '';
 
   // Admin buttons — always show when admin
@@ -2015,7 +2001,6 @@ function renderDraft() {
   }
 
   c.innerHTML = html;
-  if (adminDraft) adminDraft.innerHTML = html;
 }
 
 /* ===================== Tab Switching ===================== */
@@ -2030,7 +2015,7 @@ function switchTab(tab) {
 function updateFab() {
   const fab = document.getElementById('fab');
   if (!S.isAdmin) { fab.classList.add('hidden'); return; }
-  if (S.activeTab === 'draft') {
+  if (S.activeTab === 'admin' && S._adminTab === 'draft') {
     fab.classList.remove('hidden');
     fab.onclick = () => openDraftPickModal();
   } else {
@@ -2176,25 +2161,6 @@ async function toggleCut(golferId) {
   render();
 }
 
-function openBonusModal() {
-  if (S.golfers.length === 0) {
-    showToast('Erst Spieler draften, dann Bonuses vergeben');
-    return;
-  }
-  const sel = document.getElementById('selectBonusGolfer');
-  let opts = '';
-  for (const p of S.participants) {
-    const teamGolfers = S.golfers.filter(g => g.participant_id === p.id);
-    if (teamGolfers.length === 0) continue;
-    opts += `<optgroup label="${esc(p.name)}">`;
-    opts += teamGolfers.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
-    opts += '</optgroup>';
-  }
-  sel.innerHTML = opts;
-  document.getElementById('selectBonusType').value = 'par3_win';
-  openModal('modalBonus');
-}
-
 async function addBonus() {
   const golferId = document.getElementById('selectBonusGolfer').value;
   const type = document.getElementById('selectBonusType').value;
@@ -2207,8 +2173,8 @@ async function addBonus() {
     bonus_type: type, shots
   });
   if (error) { showToast('Fehler: ' + error.message); return; }
-  closeModal('modalBonus');
   await loadAll();
+  applyLiveScores();
   render();
   showToast('Bonus für ' + (golfer ? golfer.name : '') + ' hinzugefügt');
 }
@@ -2216,6 +2182,7 @@ async function addBonus() {
 async function removeBonus(id) {
   await sb.from('masters_bonuses').delete().eq('id', id);
   await loadAll();
+  applyLiveScores();
   render();
   showToast('Bonus entfernt');
 }
@@ -2226,41 +2193,42 @@ async function removeBonus(id) {
 function renderTournament() {
   const list = document.getElementById('tournamentList');
   if (!list) return;
-
   if (new Date() < TOURNAMENT_START) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Live-Scores werden ab der ersten Runde angezeigt.</p></div>';
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Ab Mittwoch werden hier die Live-Scores des Masters angezeigt.</p></div>';
     return;
   }
-
   let entries = Object.entries(S.liveScores);
-
-  // Fallback: if no ESPN data but frozen scores exist, build leaderboard from Supabase
+  // Fallback: if no ESPN data but frozen scores exist, build leaderboard from Supabase data
   if (entries.length === 0 && S.scores.length > 0 && localStorage.getItem('masters_frozen')) {
     const synthScores = {};
     for (const g of S.golfers) {
       const rounds = {};
+      let totalPar = 0;
+      let hasScores = false;
       for (let r = 1; r <= 4; r++) {
-        const sc = S.scores.find(s => s.golfer_id === g.id && s.round === r && s.score > 0);
-        if (sc) rounds['r' + r] = sc.score;
+        const sc = S.scores.find(s => s.golfer_id === g.id && s.round === r);
+        if (sc && sc.score > 0) { rounds['r' + r] = sc.score; totalPar += sc.score - PAR; hasScores = true; }
       }
-      if (Object.keys(rounds).length === 0) continue;
-      let toPar = 0;
-      for (const [k, v] of Object.entries(rounds)) { if (k.startsWith('r')) toPar += v - PAR; }
-      synthScores[g.name] = { ...rounds, toPar, thru: 'F', status: golferStatus(g) === 'cut' ? 'cut' : '', madeCut: g.made_cut, currentRound: 0, finished: true, headshot: '', holes: {} };
+      if (hasScores) {
+        synthScores[g.name] = { ...rounds, toPar: totalPar, status: g.made_cut ? 'active' : 'cut', finished: true, currentRound: 0, thru: '', madeCut: g.made_cut, headshot: '' };
+      }
     }
     S.liveScores = synthScores;
     entries = Object.entries(synthScores);
   }
-
   if (entries.length === 0) {
     list.innerHTML = '<div class="empty"><div class="empty-icon">&#9971;</div><h3>Keine Live-Daten</h3><p>Das Turnier hat noch nicht begonnen oder die Daten werden geladen.</p></div>';
     return;
   }
 
-  const filter = (document.getElementById('tournamentFilter')?.value || '').toLowerCase().trim();
+  const filterEl = document.getElementById('tournamentFilter');
+  const filter = normalizeName(filterEl?.value || '');
+  // Show/hide clear button
+  const clearBtn = document.getElementById('tournamentFilterClear');
+  if (clearBtn) clearBtn.style.display = filterEl?.value?.trim() ? 'flex' : 'none';
 
-  // Build player list sorted by toPar
-  let players = entries.map(([name, data]) => {
+  // Build FULL player list (unfiltered) for rank computation
+  let allPlayers = entries.map(([name, data]) => {
     const draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(name));
     const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
     const manualStatus = draftedGolfer ? golferStatus(draftedGolfer) : null;
@@ -2268,28 +2236,33 @@ function renderTournament() {
     return { name, data, team: team ? team.name : null };
   });
 
-  if (filter) {
-    players = players.filter(p => p.name.toLowerCase().includes(filter) || (p.team && p.team.toLowerCase().includes(filter)));
-  }
-
-  players.sort((a, b) => a.data.toPar - b.data.toPar);
-
-  // Sort: active first, then cut, then WD
-  players.sort((a, b) => {
+  // Sort: active first by toPar, then cut, then WD
+  allPlayers.sort((a, b) => {
     const aOrder = a.data.status === 'wd' ? 2 : a.data.status === 'cut' ? 1 : 0;
     const bOrder = b.data.status === 'wd' ? 2 : b.data.status === 'cut' ? 1 : 0;
     if (aOrder !== bOrder) return aOrder - bOrder;
     return a.data.toPar - b.data.toPar;
   });
 
-  // Compute ranks — only show rank for first player at each score (PGA style)
-  let rank = 0, prevScore = null, shownRank = false;
-  players.forEach((p, i) => {
+  // Compute ranks on FULL list — rank stored on each player
+  let rank = 0, prevScore = null;
+  allPlayers.forEach((p, i) => {
     const isOut = p.data.status === 'wd' || p.data.status === 'cut';
-    if (!isOut && p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; shownRank = false; }
+    if (!isOut && p.data.toPar !== prevScore) { rank = i + 1; prevScore = p.data.toPar; }
     p._rank = isOut ? 0 : rank;
-    p._showRank = !isOut && !shownRank;
-    if (!isOut && !shownRank) shownRank = true;
+  });
+
+  // Apply search filter
+  let players = filter
+    ? allPlayers.filter(p => fuzzyMatch(p.name, filter) || (p.team && fuzzyMatch(p.team, filter)))
+    : allPlayers;
+
+  // Compute _showRank on display list (show rank for first at each score)
+  let shownRanks = new Set();
+  players.forEach(p => {
+    const isOut = p.data.status === 'wd' || p.data.status === 'cut';
+    p._showRank = !isOut && !shownRanks.has(p._rank);
+    if (!isOut) shownRanks.add(p._rank);
   });
 
   function renderTournamentEntry(p) {
@@ -2297,6 +2270,7 @@ function renderTournament() {
     const isCut = p.data.status === 'cut';
     const isOut = isWD || isCut;
     const isFav = S.favorites && S.favorites.has(p.name);
+    const isMine = S.myName && p.team === S.myName;
     const starSvg = isFav
       ? `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
       : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
@@ -2305,6 +2279,7 @@ function renderTournament() {
     const nameParts = p.name.trim().split(' ');
     const shortName = nameParts.length > 1 ? nameParts.slice(1).join(' ') + ' ' + nameParts[0][0] + '.' : p.name;
     const teamBadge = p.team ? `<div style="font-size:10px;color:var(--gold);margin-top:1px">${esc(p.team)}</div>` : '';
+    const mineStyle = isMine && !isOut ? 'border-color:var(--green);background:linear-gradient(135deg,rgba(0,103,71,.06),#fff)' : '';
 
     if (isOut) {
       const badge = isWD ? 'WD' : 'MC';
@@ -2312,7 +2287,7 @@ function renderTournament() {
         const sc = p.data['r' + r];
         if (!sc) return '<span style="color:var(--text3)">\u2014</span>';
         const rel = sc - PAR;
-        return `<span style="color:${rel < 0 ? '#006747' : rel === 0 ? '#2471A3' : '#000'};font-weight:500">${sc}</span>`;
+        return `<span style="color:${rel < 0 ? '#E63946' : rel === 0 ? '#2563EB' : '#000'};font-weight:500">${sc}</span>`;
       });
       return `<div class="lb-entry" style="opacity:0.4;cursor:${isCut ? 'pointer' : 'default'};flex-wrap:nowrap" ${isCut ? `onclick="showScorecardByName('${esc(p.name)}')"` : ''}>
         ${favBtn}
@@ -2335,16 +2310,16 @@ function renderTournament() {
     const rounds = [1,2,3,4].map(r => {
       if (p.data.currentRound === r && !p.data.finished) {
         const rtp = p.data['r' + r + '_toPar'] !== undefined ? p.data['r' + r + '_toPar'] : p.data.toPar;
-        const liveColor = rtp < 0 ? '#006747' : rtp === 0 ? '#2471A3' : '#000';
+        const liveColor = rtp < 0 ? '#E63946' : rtp === 0 ? '#2563EB' : '#000';
         return `<span style="font-size:10px;color:${liveColor};font-weight:600">${fmtScore(rtp)}<span style="font-size:8px;color:var(--text3);font-weight:400;display:block">${p.data.thru}</span></span>`;
       }
       const sc = p.data['r' + r];
       if (!sc) return '<span style="color:var(--text3)">\u2014</span>';
       const rel = sc - PAR;
-      return `<span style="color:${rel < 0 ? '#006747' : rel === 0 ? '#2471A3' : '#000'};font-weight:500">${sc}</span>`;
+      return `<span style="color:${rel < 0 ? '#E63946' : rel === 0 ? '#2563EB' : '#000'};font-weight:500">${sc}</span>`;
     });
 
-    return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap" onclick="showScorecardByName('${esc(p.name)}')">
+    return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap;${mineStyle}" onclick="showScorecardByName('${esc(p.name)}')">
       ${favBtn}
       <div class="lb-rank" style="width:28px;flex-shrink:0">${p._showRank ? p._rank : ''}</div>
       <div style="flex:1;min-width:0;overflow:hidden">
@@ -2365,13 +2340,38 @@ function renderTournament() {
   const favPlayers = players.filter(p => favNames.has(p.name));
   const restPlayers = players.filter(p => !favNames.has(p.name));
 
+  // Compute _showRank within favorites section (shared ranks like full leaderboard)
+  let favShownRanks = new Set();
+  favPlayers.forEach(p => {
+    const isOut = p.data.status === 'wd' || p.data.status === 'cut';
+    p._showRankFav = !isOut && !favShownRanks.has(p._rank);
+    if (!isOut) favShownRanks.add(p._rank);
+  });
+
   let html = '';
-  if (favPlayers.length > 0) {
-    html += '<div class="fav-divider">Favoriten</div>';
-    html += favPlayers.map(renderTournamentEntry).join('');
-    html += '<div class="fav-divider">Alle Spieler</div>';
+  if (filter) {
+    // During search: show all matching players in one flat list
+    html += players.map(renderTournamentEntry).join('');
+  } else {
+    if (favPlayers.length > 0) {
+      const MAX_FAV_SHOW = 5;
+      const showAll = S._showAllFavs || favPlayers.length <= MAX_FAV_SHOW;
+      const visibleFavs = showAll ? favPlayers : favPlayers.slice(0, MAX_FAV_SHOW);
+      html += '<div class="fav-divider">Favoriten</div>';
+      html += visibleFavs.map(p => {
+        const saved = p._showRank;
+        p._showRank = p._showRankFav;
+        const h = renderTournamentEntry(p);
+        p._showRank = saved;
+        return h;
+      }).join('');
+      if (!showAll) {
+        html += `<div style="text-align:center;padding:8px 0 4px"><span style="font-size:13px;color:var(--green);cursor:pointer;font-weight:500" onclick="S._showAllFavs=true;renderTournament()">Alle ${favPlayers.length} Favoriten zeigen</span></div>`;
+      }
+      html += '<div class="fav-divider">Alle Spieler</div>';
+    }
+    html += restPlayers.map(renderTournamentEntry).join('');
   }
-  html += restPlayers.map(renderTournamentEntry).join('');
 
   list.innerHTML = html;
 }
@@ -2518,11 +2518,14 @@ function openModal(id) {
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
 }
-// Close modals on backdrop click
+// Close modals on backdrop click + prevent background scroll
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) overlay.classList.remove('open');
   });
+  overlay.addEventListener('touchmove', e => {
+    if (!e.target.closest('.modal')) e.preventDefault();
+  }, { passive: false });
 });
 // Swipe-down to dismiss modals
 document.querySelectorAll('.modal').forEach(modal => {
@@ -2660,14 +2663,17 @@ function selectFieldPlayer(name, el) {
 /* ===================== Live Scoring (ESPN) ===================== */
 function normalizeName(name) {
   return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+    .toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function fuzzyMatch(text, query) {
+  // Subsequence match: "inty" matches "macintyre"
   if (!query) return true;
   const t = normalizeName(text);
   const q = normalizeName(query);
+  // First try substring (faster, preferred)
   if (t.includes(q)) return true;
+  // Then try subsequence
   let ti = 0;
   for (let qi = 0; qi < q.length; qi++) {
     while (ti < t.length && t[ti] !== q[qi]) ti++;
@@ -2701,7 +2707,7 @@ function matchGolferToLive(golferName) {
       if (fn[0] === firstInit) return m.data;
     }
   }
-  // No partial match — too many false positives
+  // No partial match — too many false positives (e.g. "Coody" matching random names)
   return null;
 }
 
@@ -2785,8 +2791,7 @@ async function fetchLiveScores() {
       const totalToPar = c.score === 'E' ? 0 : parseInt(c.score) || 0;
       const thru = statusThru || thruHoles;
 
-      // Detect missed cut: 2 rounds with scores, no R3/R4
-      // WD/DQ: handled manually via Admin panel
+      // Detect missed cut (fallback): ESPN status or old linescore heuristic
       const maxRounds = linescores.length;
       const completedRounds = Object.keys(roundScores).filter(k => !k.includes('toPar')).length;
       const isCut = (statusType && statusType.toLowerCase() === 'cut') ||
@@ -2799,14 +2804,15 @@ async function fetchLiveScores() {
         thru: thru,
         status: isCut ? 'cut' : statusType,
         madeCut: !isCut,
+        _amateur: isAmateur,
         currentRound,
         finished: finished,
-        headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : '',
-        _amateur: isAmateur
+        headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : ''
       };
     }
 
     // Auto-detect cut: Top CUT_TOP + Ties (amateurs don't count toward spots)
+    // Only calculate when ALL players have completed R2 (nobody mid-round)
     const allScores = Object.values(scores);
     const anyoneMidRound = allScores.some(s => !s.finished && s.currentRound > 0);
     const withR2 = allScores.filter(s => s.r1 && s.r2);
@@ -2829,7 +2835,7 @@ async function fetchLiveScores() {
 
     S.liveScores = scores;
     S.liveLastUpdate = new Date();
-    // Show "Live" only when at least one player is currently mid-round
+    // Show "Live" only when ESPN says event is "in" AND at least one player is mid-round
     const anyonePlaying = S.tournamentLive && Object.values(scores).some(s => !s.finished && s.currentRound > 0);
     S.liveActive = anyonePlaying;
     updateLiveBadge(anyonePlaying);
@@ -2843,22 +2849,27 @@ async function fetchLiveScores() {
     render();
   } catch (err) {
     console.warn('Live scoring fetch failed:', err);
+    S.liveActive = false;
     updateLiveBadge(false);
   }
 }
 
 async function freezeFinalScores() {
+  // Save all ESPN round scores to Supabase so they persist after ESPN moves to next event
   const upserts = [];
   for (const g of S.golfers) {
     const live = matchGolferToLive(g.name);
     if (!live) continue;
+    // Save round scores
     for (let r = 1; r <= 4; r++) {
       const sc = live['r' + r];
       if (!sc) continue;
-      const existing = S.scores.find(s => s.golfer_id === g.id && s.round === r && s.score > 0);
+      // Skip if manual score already exists
+      const existing = S.scores.find(s => s.golfer_id === g.id && s.round === r);
       if (existing) continue;
       upserts.push({ golfer_id: g.id, round: r, score: sc, user_id: 'auto-freeze' });
     }
+    // Update made_cut based on ESPN data
     if (live.status === 'cut' && g.made_cut) {
       await sb.from('masters_golfers').update({ made_cut: false }).eq('id', g.id);
     }
@@ -2867,10 +2878,11 @@ async function freezeFinalScores() {
     await sb.from('masters_scores').insert(upserts);
   }
   localStorage.setItem('masters_frozen', '1');
+  // Reload scores from Supabase
   await loadAll();
   applyLiveScores();
   render();
-  console.log('Tournament scores frozen:', upserts.length, 'scores saved');
+  console.log('Tournament scores frozen to Supabase:', upserts.length, 'scores saved');
 }
 
 function applyLiveScores() {
@@ -2879,7 +2891,11 @@ function applyLiveScores() {
     if (!live) continue;
     g._live = live;
     g._liveMatched = true;
-    if (live.status === 'cut' && g.made_cut) g._liveCut = true;
+    if (live.status === 'cut' && g.made_cut) {
+      g._liveCut = true;
+      g.made_cut = false;
+      sb.from('masters_golfers').update({ made_cut: false }).eq('id', g.id);
+    }
   }
 }
 
@@ -2887,6 +2903,7 @@ function applyLiveScores() {
 function updateLiveBadge(active) {
   const badge = document.getElementById('liveBadge');
   const text = document.getElementById('liveText');
+  // Hide badge before tournament or after it's finished
   if (!S.tournamentLive && !S.tournamentFinished && new Date() < TOURNAMENT_START) {
     badge.style.display = 'none';
     return;
@@ -3088,6 +3105,7 @@ function closePWAPrompt(permanent) {
   if (permanent) localStorage.setItem('masters_pwa_prompt_shown', '1');
   const modal = document.getElementById('pwa-prompt-modal');
   if (modal) modal.style.display = 'none';
+  // After PWA prompt dismiss, show tutorial if not seen
   if (!hasSeenTutorial()) {
     setTimeout(showTutorial, 400);
   }
@@ -3153,10 +3171,15 @@ function initTutorialSwipe() {
   const track = document.getElementById('tutorial-track');
   if (!track) return;
   let startX = 0, startY = 0, deltaX = 0, swiping = false;
+
   track.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX; startY = e.touches[0].clientY; deltaX = 0; swiping = false;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    deltaX = 0;
+    swiping = false;
     track.style.transition = 'none';
   }, { passive: true });
+
   track.addEventListener('touchmove', e => {
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
@@ -3167,6 +3190,7 @@ function initTutorialSwipe() {
     const pxToPercent = (deltaX / track.parentElement.offsetWidth) * 100;
     track.style.transform = `translateX(${offset + pxToPercent}%)`;
   }, { passive: true });
+
   track.addEventListener('touchend', () => {
     track.style.transition = 'transform .3s ease';
     if (Math.abs(deltaX) > 50) {
@@ -3174,11 +3198,12 @@ function initTutorialSwipe() {
       if (deltaX > 0 && _tutorialSlide > 0) _tutorialSlide--;
     }
     updateTutorialSlide();
-    deltaX = 0; swiping = false;
+    deltaX = 0;
+    swiping = false;
   }, { passive: true });
 }
 
-// Prevent background scroll on modals
+// Prevent background scroll on PWA/tutorial modals
 ['pwa-prompt-modal', 'tutorial-modal'].forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -3187,10 +3212,10 @@ function initTutorialSwipe() {
   }, { passive: false });
 });
 
-// Tap statusbar to scroll-to-top (standalone PWA)
+// Tap statusbar area to scroll-to-top (standalone PWA workaround)
 if (isRunningStandalone()) {
   document.addEventListener('click', e => {
-    if (e.clientY > 44) return;
+    if (e.clientY > 44) return; // only top 44px (statusbar zone)
     const active = document.querySelector('.view.active');
     if (active) active.scrollTo({ top: 0, behavior: 'smooth' });
   });
