@@ -1471,6 +1471,12 @@ function renderPayoutsView() {
   const ranking = getRanking();
   const section = document.getElementById('payoutsViewContent');
   if (!section) return;
+
+  if (new Date() < TOURNAMENT_START) {
+    section.innerHTML = '<div class="empty"><div class="empty-icon">&#128176;</div><h3>Turnier beginnt am Mi, 9. April</h3><p>Payouts werden ab der ersten Runde berechnet</p></div>';
+    return;
+  }
+
   if (S.participants.length < 2) {
     section.innerHTML = '<div class="empty"><div class="empty-icon">&#128176;</div><h3>Noch keine Payouts</h3><p>Mindestens 2 Mitspieler nötig</p></div>';
     return;
@@ -1799,7 +1805,7 @@ function renderLeaderboard() {
   });
 
   function renderLbEntry(t) {
-    const trophyIcon = '🧥';
+    const trophyIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C8A951" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 01-2-2V5h4"/><path d="M18 9h2a2 2 0 002-2V5h-4"/><path d="M4 5h16v4a6 6 0 01-6 6h-4a6 6 0 01-6-6V5z"/><path d="M12 15v3"/><path d="M8 21h8"/></svg>`;
     const rankDisplay = t.isEliminated ? '&times;' : (t._rank === 1 ? trophyIcon : t._rank);
     const isMine = S.myName && t.name === S.myName;
     const isFav = S.favorites && S.favorites.has(t.name);
