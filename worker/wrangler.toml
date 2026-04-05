@@ -1,0 +1,20 @@
+name = "masters-pool-push"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["*/2 * * * *"]
+
+[[kv_namespaces]]
+binding = "KV"
+id = "bcb2358ebad1452aac00b777a4dc09f3"
+
+[vars]
+SUPABASE_URL = "https://wmqmufxyovfhxorzvrzn.supabase.co"
+ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard"
+
+# Secrets (set via wrangler secret put):
+# SUPABASE_KEY - anon key
+# VAPID_PRIVATE_KEY - same as PGA pool
+# VAPID_PUBLIC_KEY - same as PGA pool
+# VAPID_SUBJECT - mailto:habeler.markus@gmail.com
