@@ -2160,7 +2160,7 @@ function openDraftPickModal() {
 }
 
 async function addDraftPick() {
-  const name = document.getElementById('inputGolferName').value.trim();
+  const name = document.getElementById('inputGolferName').value.trim().replace(/\s*\(a\)\s*$/, '');
   const pid = document.getElementById('selectDraftTeam').value;
   const round = parseInt(document.getElementById('selectDraftRound').value);
   if (!name || !pid) return;
@@ -2705,7 +2705,7 @@ function selectFieldPlayer(name, el) {
 
 /* ===================== Live Scoring (ESPN) ===================== */
 function normalizeName(name) {
-  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return name.replace(/\s*\(a\)\s*$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
@@ -2727,7 +2727,8 @@ function fuzzyMatch(text, query) {
 }
 
 function matchGolferToLive(golferName) {
-  const norm = normalizeName(golferName);
+  // Strip amateur marker (a) before matching
+  const norm = normalizeName(golferName.replace(/\s*\(a\)\s*$/, ''));
   const parts = norm.split(' ');
   // Try exact match first
   for (const [liveName, data] of Object.entries(S.liveScores)) {
