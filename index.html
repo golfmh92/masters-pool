@@ -2901,10 +2901,34 @@ async function fetchLiveScores() {
       const statusThru = status.thru > 0 ? '' + status.thru : '';
       const statusType = status.type?.name || '';
       const statusState = status.type?.state || '';
-      // c.score is object {value, displayValue} on web endpoint
+
+      // Fallback: detect mid-round from status when hole-by-hole data isn't populated yet
+      if (currentRound === 0 && statusState === 'in' && status.period > 0 && status.thru > 0) {
+        currentRound = status.period;
+        finished = false;
+        thruHoles = '' + status.thru;
+        // Use round displayValue for toPar
+        const rdIdx = currentRound - 1;
+        if (rdIdx < linescores.length) {
+          const rdDV = linescores[rdIdx].displayValue;
+          const rdToPar = rdDV === 'E' ? 0 : parseInt(rdDV);
+          if (!isNaN(rdToPar)) roundScores['r' + currentRound + '_toPar'] = rdToPar;
+        }
+      }
+
+      // Calculate toPar: prefer round data over score.displayValue (which can be stale/wrong mid-round)
       const scoreObj = c.score || {};
       const scoreDV = typeof scoreObj === 'object' ? (scoreObj.displayValue || '') : scoreObj;
-      const totalToPar = scoreDV === 'E' || scoreDV === '-' ? 0 : parseInt(scoreDV) || 0;
+      let totalToPar = scoreDV === 'E' || scoreDV === '-' ? 0 : parseInt(scoreDV) || 0;
+      // Recalculate from round data for mid-round accuracy
+      if (currentRound > 0 && !finished) {
+        let calcTP = 0;
+        for (let r = 1; r <= 4; r++) {
+          if (roundScores['r' + r]) calcTP += roundScores['r' + r] - PAR;
+          else if (roundScores['r' + r + '_toPar'] !== undefined) calcTP += roundScores['r' + r + '_toPar'];
+        }
+        totalToPar = calcTP;
+      }
       const thru = statusThru || thruHoles;
 
       // Detect WD/DQ/Cut from ESPN status
