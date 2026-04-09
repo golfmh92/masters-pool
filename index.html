@@ -821,6 +821,7 @@ body::before{content:'';position:fixed;inset:0;background:
 <script>
 /* ===================== Constants ===================== */
 const PAR = 72; // Augusta National
+const AUGUSTA_PARS = [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4]; // Holes 1-18
 const ENTRY_FEE = 20;
 const ESPN_GOLF_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?league=pga';
 const ESPN_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
@@ -1679,7 +1680,7 @@ function renderPayoutsView() {
       <div class="stats-row">
         <div class="stat-card"><div class="stat-val">${S.participants.length}</div><div class="stat-label">Mitspieler</div></div>
         <div class="stat-card"><div class="stat-val">${fmtMoney(pot)}</div><div class="stat-label">Pot</div></div>
-        <div class="stat-card"><div class="stat-val">${fmtMoney(pot*.6)}</div><div class="stat-label">1. Platz</div></div>
+        <div class="stat-card"><div class="stat-val">${fmtMoney(Math.round(pot*.6))}</div><div class="stat-label">1. Platz</div></div>
       </div>
       ${html}`;
   }
@@ -1706,28 +1707,40 @@ function buildPodiumHtml(activeRanking, p1, p2, p3) {
   return html;
 }
 
-function buildPersonalPayoutHtml(pot, ranking) {
-  const p1 = Math.round(pot * 0.6);
-  const p2 = Math.round(pot * 0.3);
-  const p3 = pot - p1 - p2;
-
+function calcPayouts(pot, ranking) {
+  const prizes = [Math.round(pot * 0.6), Math.round(pot * 0.3), pot - Math.round(pot * 0.6) - Math.round(pot * 0.3)];
   const activeRanking = ranking.filter(x => !x.isEliminated);
+  // Assign payouts with tie splitting
+  const payouts = {};
+  activeRanking.forEach(t => { payouts[t.name] = 0; });
+  let i = 0;
+  while (i < activeRanking.length && i < 3) {
+    const currentTotal = activeRanking[i].total;
+    // Find all tied at this position
+    const tied = [];
+    for (let j = i; j < activeRanking.length && activeRanking[j].total === currentTotal; j++) tied.push(j);
+    // Sum the prizes these positions would get
+    let prizeSum = 0;
+    for (const j of tied) { if (j < 3) prizeSum += prizes[j]; }
+    const split = Math.round(prizeSum / tied.length);
+    for (const j of tied) payouts[activeRanking[j].name] = split;
+    i += tied.length;
+  }
+  return payouts;
+}
+
+function buildPersonalPayoutHtml(pot, ranking) {
+  const activeRanking = ranking.filter(x => !x.isEliminated);
+  const payouts = calcPayouts(pot, ranking);
   const myRanking = ranking.find(t => t.name === S.myName);
   const myActiveIdx = myRanking ? activeRanking.indexOf(myRanking) : -1;
 
-  let myPayout = 0;
-  if (myActiveIdx === 0) myPayout = p1;
-  else if (myActiveIdx === 1) myPayout = p2;
-  else if (myActiveIdx === 2) myPayout = p3;
+  const myPayout = payouts[S.myName] || 0;
   const myNet = myPayout - ENTRY_FEE;
 
   // Compute transfers
   const balances = ranking.map(t => {
-    const idx = activeRanking.indexOf(t);
-    let payout = 0;
-    if (idx === 0) payout = p1;
-    else if (idx === 1) payout = p2;
-    else if (idx === 2) payout = p3;
+    const payout = payouts[t.name] || 0;
     return { name: t.name, net: payout - ENTRY_FEE };
   });
   const creditors = balances.filter(b => b.net > 0).map(b => ({ ...b, remaining: b.net }));
@@ -1789,18 +1802,15 @@ function buildPersonalPayoutHtml(pot, ranking) {
 function buildPayoutHtml(pot, ranking) {
   if (S.participants.length < 2) return '';
 
-  const p1 = Math.round(pot * 0.6);
-  const p2 = Math.round(pot * 0.3);
-  const p3 = pot - p1 - p2;
+  const activeRanking = ranking.filter(x => !x.isEliminated);
+  const payouts = calcPayouts(pot, ranking);
+  const p1 = payouts[activeRanking[0]?.name] || 0;
+  const p2 = payouts[activeRanking[1]?.name] || 0;
+  const p3 = payouts[activeRanking[2]?.name] || 0;
 
   // Net per person (payout - entry)
-  const activeRanking = ranking.filter(x => !x.isEliminated);
   const balances = ranking.map(t => {
-    const activeIdx = activeRanking.indexOf(t);
-    let payout = 0;
-    if (activeIdx === 0) payout = p1;
-    else if (activeIdx === 1) payout = p2;
-    else if (activeIdx === 2) payout = p3;
+    const payout = payouts[t.name] || 0;
     return { name: t.name, net: payout - ENTRY_FEE };
   });
 
@@ -1994,16 +2004,23 @@ function renderLeaderboard() {
     });
   }
 
-  // Compute ranks first
-  let rank = 0;
+  // Compute ranks with ties (shared ranks for equal scores)
+  let rank = 0, prevTotal = null;
   filteredRanking.forEach((t, i) => {
-    if (!t.isEliminated) rank = i + 1;
+    if (!t.isEliminated) {
+      if (t.total !== prevTotal) rank = i + 1;
+      prevTotal = t.total;
+    }
     t._rank = t.isEliminated ? 0 : rank;
   });
+  // Detect ties
+  const rankCounts = {};
+  filteredRanking.forEach(t => { if (t._rank > 0) rankCounts[t._rank] = (rankCounts[t._rank] || 0) + 1; });
+  filteredRanking.forEach(t => { t._tied = rankCounts[t._rank] > 1; });
 
   function renderLbEntry(t) {
     const trophyIcon = `<img src="data:image/png;base64,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" width="24" height="24" style="vertical-align:middle;filter:hue-rotate(-10deg) brightness(.7) saturate(1.3)">`;
-    const rankDisplay = t.isEliminated ? '&times;' : (t._rank === 1 ? trophyIcon : t._rank);
+    const rankDisplay = t.isEliminated ? '&times;' : (t._rank === 1 && !t._tied ? trophyIcon : (t._tied ? 'T' + t._rank : t._rank));
     const isMine = S.myName && t.name === S.myName;
     const isFav = S.favorites && S.favorites.has(t.name);
     const cls = [
@@ -2097,8 +2114,12 @@ function renderLeaderboard() {
             liveHtml = '<div style="width:40px;text-align:center;font-size:11px;color:var(--text3)">—</div>';
           }
           const cutBadge = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
+          const posLabel = g._live?.position ? `<span style="font-size:9px;color:var(--text3);margin-left:4px">${g._live.position}</span>` : '';
+          const fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(g.name)) || (g._espnName ? S.mastersField.find(f => normalizeName(f.name) === normalizeName(g._espnName)) : null);
+          const debutStar = fieldEntry?.debut ? '<span style="color:var(--gold);font-size:9px;margin-left:2px">★</span>' : '';
+          const amateurBadge = g._live?._amateur ? '<span style="font-size:9px;color:var(--text3);margin-left:2px">(a)</span>' : '';
           return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer" onclick="event.stopPropagation();showScorecard('${g.id}')">
-            <div class="golfer-name">${esc(shortName(g.name))}${cutBadge}</div>
+            <div class="golfer-name">${esc(shortName(g.name))}${debutStar}${amateurBadge}${cutBadge}${posLabel}</div>
             <div class="golfer-rounds">${rounds}</div>
             ${liveHtml}
           </div>`;
@@ -2622,13 +2643,14 @@ function renderTournament() {
   list.innerHTML = html;
 }
 
-function buildScorecardHeader(name, teamName, headshot) {
+function buildScorecardHeader(name, teamName, headshot, position) {
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   const avatarHtml = headshot
     ? `<img class="scorecard-avatar" src="${headshot}" alt="" onerror="this.outerHTML='<div class=\\'scorecard-avatar-fallback\\'>${initials}</div>'">`
     : `<div class="scorecard-avatar-fallback">${initials}</div>`;
   const teamInfo = teamName ? `<div style="font-size:13px;color:var(--gold);font-weight:400;margin-top:1px">${esc(teamName)}</div>` : '';
-  return `<div class="scorecard-header">${avatarHtml}<div class="scorecard-header-info"><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${esc(name)}</div>${teamInfo}</div></div>`;
+  const posHtml = position ? `<div style="font-size:12px;color:var(--text3);margin-top:2px">Platz ${position}</div>` : '';
+  return `<div class="scorecard-header">${avatarHtml}<div class="scorecard-header-info"><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${esc(name)}</div>${teamInfo}${posHtml}</div></div>`;
 }
 
 function showScorecardByName(playerName) {
@@ -2638,7 +2660,8 @@ function showScorecardByName(playerName) {
   if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === playerName);
   const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
 
-  document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(playerName, team?.name, data.headshot);
+  const pos = data.position || '';
+  document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(playerName, team?.name, data.headshot, pos);
   renderScorecardContent(data);
   track('scorecard', playerName);
   openModal('modalScorecard');
@@ -2649,7 +2672,8 @@ function showScorecard(golferId) {
   if (!golfer || !golfer._live) { showToast('Keine Daten verfügbar'); return; }
   const team = S.participants.find(p => p.id === golfer.participant_id);
 
-  document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot);
+  const pos = golfer._live?.position || '';
+  document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot, pos);
   renderScorecardContent(golfer._live);
   track('scorecard', golfer.name);
   openModal('modalScorecard');
@@ -2683,24 +2707,13 @@ function renderScorecardContent(live) {
     if (rh && rh.length > 0) activeRounds.push(r);
   }
 
-  if (activeRounds.length === 0) {
-    // No hole-by-hole data yet — show summary with available info
-    let summaryParts = [];
-    if (live.statusState === 'pre') {
-      summaryParts.push('Noch nicht gestartet');
-      if (live.teeTime) summaryParts.push(`Startzeit: ${fmtTeeTime(live.teeTime, live.startHole)}`);
-    } else if (live.currentRound > 0 && !live.finished) {
-      summaryParts.push(`Runde ${live.currentRound}`);
-      summaryParts.push(`Score: ${fmtScore(live.toPar)}`);
-      if (live.thru) summaryParts.push(`Thru ${live.thru}`);
-      summaryParts.push('<span style="font-size:11px;color:var(--text3);margin-top:8px;display:block">Loch-Details werden geladen...</span>');
-    } else {
-      summaryParts.push('Noch keine Loch-Daten verfügbar');
-    }
-    html = `<div style="text-align:center;padding:24px 20px;color:var(--text2);font-size:14px;line-height:1.8">${summaryParts.join('<br>')}</div>`;
+  if (activeRounds.length === 0 && live.statusState === 'pre') {
+    // Not started yet — show tee time + par layout
+    let summaryParts = ['Noch nicht gestartet'];
+    if (live.teeTime) summaryParts.push(`Startzeit: ${fmtTeeTime(live.teeTime, live.startHole)}`);
+    html = `<div style="text-align:center;padding:16px 20px;color:var(--text2);font-size:14px;line-height:1.8">${summaryParts.join('<br>')}</div>`;
   } else {
-    // Get par from first round with data (par is the same every round)
-    const parSource = live.holes['r' + activeRounds[0]];
+    // Par source no longer needed — using hardcoded AUGUSTA_PARS
 
     function buildNine(start, end, label, hasExtraCol, fillExtra) {
       let h = '<table class="scorecard"><tr><th></th>';
@@ -2709,16 +2722,15 @@ function renderScorecardContent(live) {
       if (hasExtraCol) h += `<th>${fillExtra ? 'Tot' : ''}</th>`;
       h += '</tr>';
 
-      // Par row
+      // Par row (always show Augusta pars)
       h += '<tr><td class="hole-num">Par</td>';
       let parTotal = 0;
       for (let i = start; i <= end; i++) {
-        const hole = parSource.find(x => x.hole === i);
-        const p = getHolePar(hole);
-        if (p) { h += `<td style="color:var(--text3)">${p}</td>`; parTotal += p; }
-        else h += '<td></td>';
+        const p = AUGUSTA_PARS[i - 1];
+        h += `<td style="color:var(--text3)">${p}</td>`;
+        parTotal += p;
       }
-      h += `<td style="font-weight:600;color:var(--text3)">${parTotal || ''}</td>`;
+      h += `<td style="font-weight:600;color:var(--text3)">${parTotal}</td>`;
       if (hasExtraCol) h += `<td style="font-weight:600;color:var(--text3)">${fillExtra ? PAR : ''}</td>`;
       h += '</tr>';
 
@@ -3159,7 +3171,8 @@ async function fetchLiveScores() {
         startHole,
         nextRound,
         roundTeeTimes,
-        headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : ''
+        headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : '',
+        position: status.position?.displayName || ''
       };
     }
 
