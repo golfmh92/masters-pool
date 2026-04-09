@@ -1953,13 +1953,13 @@ function renderLeaderboard() {
           }).join('');
           // Live toPar + thru column
           let liveHtml;
-          if (g._live) {
+          if (g._live && g._live.statusState !== 'pre') {
             liveHtml = `<div style="width:40px;text-align:center;font-size:11px;line-height:1.2">
                 <div style="font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</div>
                 ${g._live.thru && g._live.thru !== 'F' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
               </div>`;
           } else {
-            liveHtml = '<div style="width:40px"></div>';
+            liveHtml = '<div style="width:40px;text-align:center;font-size:11px;color:var(--text3)">—</div>';
           }
           const cutBadge = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
           return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer" onclick="event.stopPropagation();showScorecard('${g.id}')">
