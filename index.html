@@ -1919,10 +1919,6 @@ function renderLeaderboard() {
             const rel = sc !== null ? sc - PAR - bonus : null;
             const sCls = scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
-            // Tee time: show if player hasn't started this round yet
-            if (g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.roundTeeTimes && g._live.roundTeeTimes[r - 1]) {
-              return `<div class="golfer-rd lb-teetime" style="font-size:10px;line-height:1.1">${fmtTeeTime(g._live.roundTeeTimes[r - 1], g._live.startHole)}</div>`;
-            }
             // Mid-round: show toPar + thru instead of score
             if (g._live && g._live.currentRound === r && !g._live.finished) {
               const rtp = g._live['r' + r + '_toPar'] !== undefined ? g._live['r' + r + '_toPar'] : g._live.toPar;
@@ -1932,11 +1928,9 @@ function renderLeaderboard() {
             const bonusBadge = r === 1 && bonus > 0 ? `<div style="font-size:8px;color:var(--gold2);line-height:1;margin-top:2px">★-${bonus}</div>` : '';
             return `<div class="golfer-rd ${sCls}" style="height:auto;${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${sc !== null ? sc : '—'}${bonusBadge}</div>`;
           }).join('');
-          // Live toPar + thru column (or tee time if not started)
+          // Live toPar + thru column
           let liveHtml;
-          if (g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.teeTime) {
-            liveHtml = `<div style="width:40px;text-align:center" class="lb-teetime">${fmtTeeTime(g._live.teeTime, g._live.startHole)}</div>`;
-          } else if (g._live) {
+          if (g._live) {
             liveHtml = `<div style="width:40px;text-align:center;font-size:11px;line-height:1.2">
                 <div style="font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</div>
                 ${g._live.thru && g._live.thru !== 'F' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
@@ -2379,7 +2373,12 @@ function renderTournament() {
     }
 
     const scoreCls = p.data.toPar < 0 ? 'under' : p.data.toPar > 0 ? 'over' : 'even';
+    const notStarted = !p.data.outStatus && !S.eventFinished && p.data.statusState === 'pre';
     const rounds = [1,2,3,4].map(r => {
+      // Tee time for upcoming round
+      if (notStarted && p.data.roundTeeTimes && p.data.roundTeeTimes[r - 1]) {
+        return `<span class="lb-teetime" style="font-size:9px">${fmtTeeTime(p.data.roundTeeTimes[r - 1], p.data.startHole)}</span>`;
+      }
       if (p.data.currentRound === r && !p.data.finished) {
         const rtp = p.data['r' + r + '_toPar'] !== undefined ? p.data['r' + r + '_toPar'] : p.data.toPar;
         const liveColor = rtp < 0 ? '#E63946' : rtp === 0 ? '#2563EB' : '#000';
@@ -2390,6 +2389,11 @@ function renderTournament() {
       const rel = sc - PAR;
       return `<span style="color:${rel < 0 ? '#E63946' : rel === 0 ? '#2563EB' : '#000'};font-weight:500">${sc}</span>`;
     });
+
+    // Right column: tee time if not started, otherwise toPar
+    const rightCol = notStarted && p.data.teeTime
+      ? `<div class="lb-teetime" style="font-size:13px">${fmtTeeTime(p.data.teeTime, p.data.startHole)}</div>`
+      : `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`;
 
     return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap;${mineStyle}" onclick="showScorecardByName('${esc(p.name)}')">
       ${favBtn}
@@ -2402,7 +2406,7 @@ function renderTournament() {
         ${rounds.map(r => `<div style="width:26px;text-align:center">${r}</div>`).join('')}
       </div>
       <div style="width:42px;text-align:right;flex-shrink:0">
-        <div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>
+        ${rightCol}
       </div>
     </div>`;
   }
