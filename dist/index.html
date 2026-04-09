@@ -1043,14 +1043,15 @@ function getTeamBonusTotal(participantId) {
 function calcTeamTotalLive(participantId) {
   // Fallback for when no round scores available: use overall ESPN toPar
   const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
-  const hasLive = teamGolfers.some(g => g._live);
-  if (!hasLive) return null;
+  // Only count golfers who have actually started (not pre-round)
+  const startedGolfers = teamGolfers.filter(g => g._live && g._live.statusState !== 'pre');
+  if (startedGolfers.length === 0) return null;
 
   const hasCutData = teamGolfers.some(g => g._live && g._live.status === 'cut');
   const count = hasCutData ? 3 : 4;
 
-  const toParValues = teamGolfers
-    .filter(g => g._live && g._live.status !== 'cut' && golferStatus(g) !== 'wd')
+  const toParValues = startedGolfers
+    .filter(g => g._live.status !== 'cut' && golferStatus(g) !== 'wd')
     .map(g => g._live.toPar)
     .filter(v => v !== undefined && v !== null);
 
