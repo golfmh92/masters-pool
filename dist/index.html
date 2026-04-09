@@ -2307,12 +2307,16 @@ function renderTournament() {
     return { name, data, team: team ? team.name : null, debut: fieldEntry?.debut };
   });
 
-  // Sort: active first by toPar, then cut, then WD
+  // Sort: active first by toPar, then by tee time if scores are equal, then cut, then WD
   allPlayers.sort((a, b) => {
     const aOrder = a.data.status === 'wd' ? 2 : a.data.status === 'cut' ? 1 : 0;
     const bOrder = b.data.status === 'wd' ? 2 : b.data.status === 'cut' ? 1 : 0;
     if (aOrder !== bOrder) return aOrder - bOrder;
-    return a.data.toPar - b.data.toPar;
+    if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
+    // Same score — sort by tee time (earlier first)
+    const aT = a.data.teeTime || '';
+    const bT = b.data.teeTime || '';
+    return aT < bT ? -1 : aT > bT ? 1 : 0;
   });
 
   // Compute ranks on FULL list — rank stored on each player
