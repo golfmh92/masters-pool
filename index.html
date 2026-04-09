@@ -328,6 +328,13 @@ body::before{content:'';position:fixed;inset:0;background:
 .spinner{width:24px;height:24px;border:3px solid var(--bg2);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin:24px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ===== Splash Screen ===== */
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#006747,#004D35);transition:opacity .3s ease}
+#splash.fade-out{opacity:0;pointer-events:none}
+#splash .splash-title{font-family:var(--font-display);font-size:26px;color:#fff;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px}
+#splash .splash-sub{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:5px;text-transform:uppercase;margin-bottom:32px}
+#splash .splash-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite}
+
 /* ===== Section title ===== */
 .section-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--green);margin:16px 0 10px;letter-spacing:.5px}
 
@@ -373,6 +380,7 @@ body::before{content:'';position:fixed;inset:0;background:
 </style>
 </head>
 <body>
+<div id="splash"><div class="splash-title">The Masters Pool</div><div class="splash-sub">April 2026</div><div class="splash-spinner"></div></div>
 <div id="app">
   <div class="safe-top"></div>
 
@@ -855,11 +863,16 @@ async function init() {
   S.myName = localStorage.getItem('masters_pool_identity') || '';
   // Restore favorites
   try { S.favorites = new Set(JSON.parse(localStorage.getItem('masters_pool_favs') || '[]')); } catch(e) { S.favorites = new Set(); }
-  await loadAll();
-  // Fetch live scores (incl. tee times) before first render so they're immediately visible
-  await fetchLiveScores();
+  // Load Supabase data + ESPN scores in parallel for faster startup
+  // fetchLiveScores stores raw data in S.liveScores; applyLiveScores needs S.golfers from loadAll
+  await Promise.all([loadAll(), fetchLiveScores()]);
+  // Re-apply live scores now that both S.golfers and S.liveScores are populated
+  applyLiveScores();
   updateIdentityBar();
   render();
+  // Remove splash screen
+  const splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 300); }
 }
 
 function setIdentity(name) {
