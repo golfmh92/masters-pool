@@ -2499,10 +2499,7 @@ function buildScorecardHeader(name, teamName, headshot) {
 
 function showScorecardByName(playerName) {
   const data = S.liveScores[playerName];
-  if (!data || !data.holes) {
-    showToast('Keine Loch-Daten verfügbar');
-    return;
-  }
+  if (!data) { showToast('Keine Daten verfügbar'); return; }
   let draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(playerName));
   if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === playerName);
   const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
@@ -2514,10 +2511,7 @@ function showScorecardByName(playerName) {
 
 function showScorecard(golferId) {
   const golfer = S.golfers.find(g => g.id === golferId);
-  if (!golfer || !golfer._live || !golfer._live.holes) {
-    showToast('Keine Loch-Daten verfügbar');
-    return;
-  }
+  if (!golfer || !golfer._live) { showToast('Keine Daten verfügbar'); return; }
   const team = S.participants.find(p => p.id === golfer.participant_id);
 
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot);
@@ -2554,7 +2548,20 @@ function renderScorecardContent(live) {
   }
 
   if (activeRounds.length === 0) {
-    html = '<p style="color:var(--text3);text-align:center;padding:20px">Noch keine Loch-Daten verfügbar</p>';
+    // No hole-by-hole data yet — show summary with available info
+    let summaryParts = [];
+    if (live.statusState === 'pre') {
+      summaryParts.push('Noch nicht gestartet');
+      if (live.teeTime) summaryParts.push(`Startzeit: ${fmtTeeTime(live.teeTime, live.startHole)}`);
+    } else if (live.currentRound > 0 && !live.finished) {
+      summaryParts.push(`Runde ${live.currentRound}`);
+      summaryParts.push(`Score: ${fmtScore(live.toPar)}`);
+      if (live.thru) summaryParts.push(`Thru ${live.thru}`);
+      summaryParts.push('<span style="font-size:11px;color:var(--text3);margin-top:8px;display:block">Loch-Details werden geladen...</span>');
+    } else {
+      summaryParts.push('Noch keine Loch-Daten verfügbar');
+    }
+    html = `<div style="text-align:center;padding:24px 20px;color:var(--text2);font-size:14px;line-height:1.8">${summaryParts.join('<br>')}</div>`;
   } else {
     // Get par from first round with data (par is the same every round)
     const parSource = live.holes['r' + activeRounds[0]];
