@@ -1957,7 +1957,7 @@ function renderLeaderboard() {
           const hasRoundScore = sc !== null;
           let liveInfo = '';
           if (!hasRoundScore && g._live && !isCut && !S.eventFinished) {
-            if (!g._live.outStatus && g._live.statusState === 'pre' && g._live.roundTeeTimes && g._live.roundTeeTimes[rd - 1]) {
+            if (!g._live.outStatus && g._live.statusState === 'pre' && g._live.nextRound === rd && g._live.roundTeeTimes && g._live.roundTeeTimes[rd - 1]) {
               liveInfo = `<span class="lb-teetime">${fmtTeeTime(g._live.roundTeeTimes[rd - 1], g._live.startHole)}</span>`;
             } else if (g._live.toPar !== undefined) {
               liveInfo = `<span style="font-size:12px;font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</span>${thru ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${thru}</span>` : ''}`;
@@ -2375,8 +2375,8 @@ function renderTournament() {
     const scoreCls = p.data.toPar < 0 ? 'under' : p.data.toPar > 0 ? 'over' : 'even';
     const notStarted = !p.data.outStatus && !S.eventFinished && p.data.statusState === 'pre';
     const rounds = [1,2,3,4].map(r => {
-      // Tee time for upcoming round
-      if (notStarted && p.data.roundTeeTimes && p.data.roundTeeTimes[r - 1]) {
+      // Tee time only for the next/current round (not future rounds)
+      if (notStarted && p.data.nextRound === r && p.data.roundTeeTimes && p.data.roundTeeTimes[r - 1]) {
         return `<span class="lb-teetime" style="font-size:9px">${fmtTeeTime(p.data.roundTeeTimes[r - 1], p.data.startHole)}</span>`;
       }
       if (p.data.currentRound === r && !p.data.finished) {
@@ -2895,6 +2895,7 @@ async function fetchLiveScores() {
       // Tee times from status + per-round linescores
       const teeTime = status.teeTime || null;
       const startHole = status.startHole || 1;
+      const nextRound = status.period || 0; // which round this tee time is for (1-4)
       const roundTeeTimes = linescores.map(ls => ls.teeTime || null);
 
       scores[name] = {
@@ -2911,6 +2912,7 @@ async function fetchLiveScores() {
         statusState,
         teeTime,
         startHole,
+        nextRound,
         roundTeeTimes,
         headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : ''
       };
