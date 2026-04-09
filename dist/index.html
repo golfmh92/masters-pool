@@ -431,10 +431,12 @@ body::before{content:'';position:fixed;inset:0;background:
         <button class="round-tab active" onclick="setAdminTab('draft')">Draft</button>
         <button class="round-tab" onclick="setAdminTab('status')">Spieler</button>
         <button class="round-tab" onclick="setAdminTab('bonus')">Bonus</button>
+        <button class="round-tab" onclick="setAdminTab('analytics')">Analytics</button>
       </div>
       <div id="adminDraftContent"></div>
       <div id="adminStatusContent" style="display:none"></div>
       <div id="adminBonusContent" style="display:none"></div>
+      <div id="adminAnalyticsContent" style="display:none"></div>
     </div>
 
     <!-- STATS -->
@@ -830,6 +832,14 @@ const IDLE_REFRESH_MS = 1800000; // 30 minutes when not playing
 /* ===================== Supabase ===================== */
 const sb = supabase.createClient('https://wmqmufxyovfhxorzvrzn.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtcW11Znh5b3ZmaHhvcnp2cnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MjMxMTIsImV4cCI6MjA4ODM5OTExMn0.Q3yViDCbriTPgzJiHQBDd52m7skULMAYf7PrYr2Uais');
 
+/* ===================== Analytics ===================== */
+if (!localStorage.getItem('masters_sid')) localStorage.setItem('masters_sid', crypto.randomUUID());
+const SID = localStorage.getItem('masters_sid');
+const DEVICE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+function track(event, detail) {
+  sb.from('masters_analytics').insert({ session_id: SID, event, detail, device: DEVICE }).then(() => {});
+}
+
 /* ===================== State ===================== */
 let S = {
   participants: [],
@@ -865,6 +875,7 @@ async function init() {
   S.myName = localStorage.getItem('masters_pool_identity') || '';
   // Restore favorites
   try { S.favorites = new Set(JSON.parse(localStorage.getItem('masters_pool_favs') || '[]')); } catch(e) { S.favorites = new Set(); }
+  track('app_open');
   // Load Supabase data + ESPN scores in parallel, with minimum splash duration
   const splashMin = new Promise(r => setTimeout(r, 1200));
   await Promise.all([loadAll(), fetchLiveScores(), splashMin]);
@@ -1465,12 +1476,15 @@ async function setGolferStatus(golferId, status) {
 
 function setAdminTab(tab) {
   S._adminTab = tab;
+  const tabs = ['draft','status','bonus','analytics'];
   document.querySelectorAll('#adminTabs .round-tab').forEach((b, i) => {
-    b.classList.toggle('active', ['draft','status','bonus'][i] === tab);
+    b.classList.toggle('active', tabs[i] === tab);
   });
   document.getElementById('adminDraftContent').style.display = tab === 'draft' ? '' : 'none';
   document.getElementById('adminStatusContent').style.display = tab === 'status' ? '' : 'none';
   document.getElementById('adminBonusContent').style.display = tab === 'bonus' ? '' : 'none';
+  document.getElementById('adminAnalyticsContent').style.display = tab === 'analytics' ? '' : 'none';
+  if (tab === 'analytics') renderAnalytics();
 }
 
 function renderAdminBonus() {
@@ -1519,6 +1533,113 @@ function renderAdminBonus() {
 // Golfer bonus: sum of shots for a specific golfer
 function getGolferBonus(golferId) {
   return S.bonuses.filter(b => b.golfer_id === golferId).reduce((sum, b) => sum + b.shots, 0);
+}
+
+async function renderAnalytics() {
+  const c = document.getElementById('adminAnalyticsContent');
+  if (!c) return;
+  c.innerHTML = '<div class="spinner"></div>';
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString();
+
+  const { data: all } = await sb.from('masters_analytics').select('*').gte('created_at', weekStart).order('created_at', { ascending: false });
+  if (!all || all.length === 0) { c.innerHTML = '<p style="color:var(--text3);text-align:center;padding:20px">Noch keine Analytics-Daten</p>'; return; }
+
+  const today = all.filter(e => e.created_at >= todayStart);
+  const sessionsToday = new Set(today.map(e => e.session_id)).size;
+  const sessionsWeek = new Set(all.map(e => e.session_id)).size;
+  const opensToday = today.filter(e => e.event === 'app_open').length;
+  const opensWeek = all.filter(e => e.event === 'app_open').length;
+
+  // Tab counts
+  const tabEvents = all.filter(e => e.event === 'tab');
+  const tabCounts = {};
+  tabEvents.forEach(e => { tabCounts[e.detail] = (tabCounts[e.detail] || 0) + 1; });
+  const tabNames = { leaderboard: 'Leaderboard', tournament: 'Turnier', rangliste: 'Rangliste', payouts: 'Payouts', stats: 'Stats', rules: 'Regeln', admin: 'Admin' };
+
+  // Top scorecards
+  const scEvents = all.filter(e => e.event === 'scorecard');
+  const scCounts = {};
+  scEvents.forEach(e => { scCounts[e.detail] = (scCounts[e.detail] || 0) + 1; });
+  const topScorecards = Object.entries(scCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  // Device split
+  const mobileCount = all.filter(e => e.device === 'mobile').length;
+  const desktopCount = all.filter(e => e.device === 'desktop').length;
+  const mobilePct = Math.round(mobileCount / all.length * 100);
+
+  let html = '';
+
+  // Summary cards
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <div class="card" style="text-align:center;padding:14px">
+      <div style="font-size:28px;font-weight:700;color:var(--green)">${sessionsToday}</div>
+      <div style="font-size:11px;color:var(--text3)">Sessions heute</div>
+    </div>
+    <div class="card" style="text-align:center;padding:14px">
+      <div style="font-size:28px;font-weight:700;color:var(--green)">${sessionsWeek}</div>
+      <div style="font-size:11px;color:var(--text3)">Sessions 7 Tage</div>
+    </div>
+    <div class="card" style="text-align:center;padding:14px">
+      <div style="font-size:28px;font-weight:700;color:var(--green)">${opensToday}</div>
+      <div style="font-size:11px;color:var(--text3)">App-Opens heute</div>
+    </div>
+    <div class="card" style="text-align:center;padding:14px">
+      <div style="font-size:28px;font-weight:700;color:var(--green)">${mobilePct}%</div>
+      <div style="font-size:11px;color:var(--text3)">Mobile</div>
+    </div>
+  </div>`;
+
+  // Tab usage
+  const sortedTabs = Object.entries(tabCounts).sort((a, b) => b[1] - a[1]);
+  const maxTab = sortedTabs.length > 0 ? sortedTabs[0][1] : 1;
+  html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:8px">Tab-Nutzung (7 Tage)</div>';
+  html += '<div class="card" style="padding:12px;margin-bottom:16px">';
+  sortedTabs.forEach(([tab, count]) => {
+    const pct = Math.round(count / maxTab * 100);
+    html += `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span>${tabNames[tab] || tab}</span><span style="color:var(--text3)">${count}</span>
+      </div>
+      <div style="height:6px;background:var(--bg2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--green);border-radius:3px"></div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Top scorecards
+  if (topScorecards.length > 0) {
+    html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:8px">Top Scorecards (7 Tage)</div>';
+    html += '<div class="card" style="padding:12px;margin-bottom:16px">';
+    topScorecards.forEach(([name, count], i) => {
+      html += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;${i < topScorecards.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        <span>${esc(name)}</span><span style="color:var(--text3)">${count}x</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Recent activity
+  html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:8px">Letzte Events</div>';
+  html += '<div class="card" style="padding:12px">';
+  const recent = all.slice(0, 15);
+  recent.forEach((e, i) => {
+    const t = new Date(e.created_at);
+    const time = t.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+    const date = t.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' });
+    const label = e.event === 'app_open' ? 'App geöffnet' : e.event === 'tab' ? `Tab: ${tabNames[e.detail] || e.detail}` : e.event === 'scorecard' ? `Scorecard: ${e.detail}` : e.event;
+    const sid = e.session_id.slice(0, 6);
+    html += `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:var(--text2);${i < recent.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+      <span>${label}</span>
+      <span style="color:var(--text3)">${sid} · ${date} ${time}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  c.innerHTML = html;
 }
 
 function render() {
@@ -2102,6 +2223,7 @@ function renderDraft() {
 /* ===================== Tab Switching ===================== */
 function switchTab(tab) {
   S.activeTab = tab;
+  track('tab', tab);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -2515,6 +2637,7 @@ function showScorecardByName(playerName) {
 
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(playerName, team?.name, data.headshot);
   renderScorecardContent(data);
+  track('scorecard', playerName);
   openModal('modalScorecard');
 }
 
@@ -2525,6 +2648,7 @@ function showScorecard(golferId) {
 
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot);
   renderScorecardContent(golfer._live);
+  track('scorecard', golfer.name);
   openModal('modalScorecard');
 }
 
