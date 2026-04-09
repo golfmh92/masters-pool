@@ -1555,7 +1555,7 @@ async function renderAnalytics() {
   const opensToday = today.filter(e => e.event === 'app_open').length;
   const opensWeek = all.filter(e => e.event === 'app_open').length;
 
-  const tabNames = { leaderboard: 'Leaderboard', tournament: 'Turnier', rangliste: 'Rangliste', payouts: 'Payouts', stats: 'Stats', rules: 'Regeln', admin: 'Admin' };
+  const tabNames = { leaderboard: 'Rangliste', tournament: 'Leaderboard', payouts: 'Payouts', stats: 'Stats', rules: 'Regeln', admin: 'Admin' };
 
   // Tab click counts
   const tabEvents = all.filter(e => e.event === 'tab');
@@ -2323,7 +2323,9 @@ function switchTab(tab) {
   S.activeTab = tab;
   track('tab', tab);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  const view = document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  view.classList.add('active');
+  view.scrollTo({ top: 0 });
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   updateFab();
 }
