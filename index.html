@@ -3150,9 +3150,9 @@ function startLiveRefresh() {
   fetchMastersField();
   // fetchLiveScores() already called in init() — skip initial call, just start polling
   S.liveTimer = setInterval(fetchLiveScores, LIVE_REFRESH_MS);
-  setInterval(() => {
+  S.badgeTimer = setInterval(() => {
     updateLiveBadge(S.liveActive);
-    // Adjust polling: 30s when live, 10min when pre, stop when post
+    // Adjust polling: 15s when live, 30min when pre, stop when post
     let desired;
     if (S.tournamentFinished) desired = 0;
     else if (S.tournamentLive) desired = LIVE_REFRESH_MS;
@@ -3163,6 +3163,33 @@ function startLiveRefresh() {
       S._currentInterval = desired;
     }
   }, 30000);
+
+  // Pause polling when app is in background to save battery
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearInterval(S.liveTimer);
+      clearInterval(S.badgeTimer);
+      S.liveTimer = null;
+      S.badgeTimer = null;
+    } else {
+      // App became visible — fetch fresh data immediately, then resume polling
+      fetchLiveScores();
+      const interval = S._currentInterval || LIVE_REFRESH_MS;
+      if (interval > 0) S.liveTimer = setInterval(fetchLiveScores, interval);
+      S.badgeTimer = setInterval(() => {
+        updateLiveBadge(S.liveActive);
+        let desired;
+        if (S.tournamentFinished) desired = 0;
+        else if (S.tournamentLive) desired = LIVE_REFRESH_MS;
+        else desired = IDLE_REFRESH_MS;
+        if (S._currentInterval !== desired) {
+          clearInterval(S.liveTimer);
+          if (desired > 0) S.liveTimer = setInterval(fetchLiveScores, desired);
+          S._currentInterval = desired;
+        }
+      }, 30000);
+    }
+  });
 }
 
 
