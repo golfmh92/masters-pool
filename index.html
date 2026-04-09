@@ -1732,6 +1732,9 @@ function calcPayouts(pot, ranking) {
 function buildPersonalPayoutHtml(pot, ranking) {
   const activeRanking = ranking.filter(x => !x.isEliminated);
   const payouts = calcPayouts(pot, ranking);
+  const p1 = payouts[activeRanking[0]?.name] || 0;
+  const p2 = payouts[activeRanking[1]?.name] || 0;
+  const p3 = payouts[activeRanking[2]?.name] || 0;
   const myRanking = ranking.find(t => t.name === S.myName);
   const myActiveIdx = myRanking ? activeRanking.indexOf(myRanking) : -1;
 
