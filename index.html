@@ -821,6 +821,7 @@ body::before{content:'';position:fixed;inset:0;background:
 const PAR = 72; // Augusta National
 const ENTRY_FEE = 20;
 const ESPN_GOLF_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?league=pga';
+const ESPN_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Wednesday — tee times visible before R1
 const CUT_TOP = 50; // Top 50 + Ties (Masters)
 const LIVE_REFRESH_MS = 15000; // 15 seconds when live
@@ -2840,9 +2841,36 @@ function matchGolferToLive(golferName) {
 async function fetchLiveScores() {
   if (new Date() < TOURNAMENT_START) { updateLiveBadge(false); return; }
   try {
-    const resp = await fetch(ESPN_GOLF_URL);
+    // Fetch both endpoints in parallel: web for tee times/status, scoreboard for hole-by-hole
+    const [resp, sbResp] = await Promise.all([fetch(ESPN_GOLF_URL), fetch(ESPN_SCOREBOARD_URL).catch(() => null)]);
     if (!resp.ok) return;
     const json = await resp.json();
+    // Parse scoreboard hole data into lookup by player name
+    const sbHoles = {};
+    try {
+      if (sbResp && sbResp.ok) {
+        const sbJson = await sbResp.json();
+        const sbEvent = (sbJson.events || []).find(e => e.name && (e.name.toLowerCase().includes('masters') || e.name.toLowerCase().includes('augusta'))) || (sbJson.events || [])[0];
+        if (sbEvent) {
+          const sbComp = (sbEvent.competitions || [])[0];
+          for (const c of (sbComp?.competitors || [])) {
+            const name = (c.athlete?.displayName || '').replace(/\s*\(a\)\s*$/, '');
+            if (!name) continue;
+            const holes = {};
+            for (let i = 0; i < (c.linescores || []).length && i < 4; i++) {
+              const roundHoles = c.linescores[i].linescores || [];
+              if (roundHoles.length > 0) {
+                holes['r' + (i + 1)] = roundHoles.map(h => ({
+                  hole: h.period, score: h.value,
+                  par: h.scoreType ? h.scoreType.displayValue : null
+                }));
+              }
+            }
+            if (Object.keys(holes).length > 0) sbHoles[name] = holes;
+          }
+        }
+      }
+    } catch(e) { /* scoreboard hole data is best-effort */ }
     const events = json.events || [];
     // Find The Masters (or current/most relevant tournament)
     let mastersEvent = events.find(e =>
@@ -2966,9 +2994,12 @@ async function fetchLiveScores() {
       const nextRound = status.period || 0; // which round this tee time is for (1-4)
       const roundTeeTimes = linescores.map(ls => ls.teeTime || null);
 
+      // Merge hole-by-hole data from scoreboard endpoint if web endpoint didn't have it
+      const mergedHoles = Object.keys(holes).length > 0 ? holes : (sbHoles[name] || {});
+
       scores[name] = {
         ...roundScores,
-        holes,
+        holes: mergedHoles,
         toPar: totalToPar,
         thru: thru,
         status: isCut ? 'cut' : (outStatus || statusType),
