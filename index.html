@@ -1774,26 +1774,11 @@ function buildPodiumHtml(activeRanking, payouts) {
 
   if (entries.length === 0) return '';
 
-  // Podium order: put rank 1 in center (index 0=left, 1=center for <=2, or shuffle for 3+)
-  let podiumOrder;
-  if (entries.length === 1) {
-    podiumOrder = entries;
-  } else if (entries.length === 2) {
-    podiumOrder = [entries[1], entries[0]];
-  } else {
-    // Find first rank-1 entry for center, rest fill sides
-    const rank1 = entries.filter(e => e.rank === 1);
-    const rest = entries.filter(e => e.rank !== 1);
-    if (rank1.length === 1) {
-      // Classic: 2nd left, 1st center, 3rd+ right
-      const left = rest.filter((_, i) => i % 2 === 0);
-      const right = rest.filter((_, i) => i % 2 === 1);
-      podiumOrder = [...left, ...rank1, ...right];
-    } else {
-      // Multiple T1 or all same rank — just show in order
-      podiumOrder = entries;
-    }
-  }
+  // Podium order: 2nd left, 1st center, 3rd+ right
+  const rank1 = entries.filter(e => e.rank === 1);
+  const rank2 = entries.filter(e => e.rank === 2);
+  const rank3plus = entries.filter(e => e.rank >= 3);
+  const podiumOrder = [...rank2, ...rank1, ...rank3plus];
 
   let html = '<div class="podium" style="flex-wrap:wrap">';
   podiumOrder.forEach(p => {
