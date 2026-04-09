@@ -2937,8 +2937,9 @@ function esc(s) {
 }
 
 function shortName(fullName) {
-  const parts = fullName.trim().split(' ');
-  if (parts.length <= 1) return fullName;
+  const clean = fullName.replace(/\s*\(a\)\s*/g, '').trim();
+  const parts = clean.split(' ');
+  if (parts.length <= 1) return clean;
   return parts.slice(1).join(' ') + ' ' + parts[0][0] + '.';
 }
 
