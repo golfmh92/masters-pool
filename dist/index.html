@@ -1890,16 +1890,24 @@ function renderMeineGolfer() {
     .sort((a, b) => a.toPar - b.toPar);
   scored.slice(0, count).forEach(g => countingIds.add(g.id));
 
-  // Sort by toPar (best first), cut golfers last
+  // Sort: started by score first, then not-started by tee time, cut/wd last
   const sortedGolfers = [...myGolfers].sort((a, b) => {
     const aS = golferStatus(a);
     const bS = golferStatus(b);
-    const aOrder = aS === 'dq' ? 3 : aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
-    const bOrder = bS === 'dq' ? 3 : bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
-    if (aOrder !== bOrder) return aOrder - bOrder;
-    const aTP = a._live ? a._live.toPar : 999;
-    const bTP = b._live ? b._live.toPar : 999;
-    return aTP - bTP;
+    const aOut = aS === 'dq' ? 3 : aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
+    const bOut = bS === 'dq' ? 3 : bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
+    if (aOut !== bOut) return aOut - bOut;
+    const aPre = a._live && a._live.statusState === 'pre' ? 1 : 0;
+    const bPre = b._live && b._live.statusState === 'pre' ? 1 : 0;
+    if (aPre !== bPre) return aPre - bPre;
+    if (!aPre && !bPre) {
+      const aTP = a._live ? a._live.toPar : 999;
+      const bTP = b._live ? b._live.toPar : 999;
+      if (aTP !== bTP) return aTP - bTP;
+    }
+    const aT = a._live?.teeTime || '';
+    const bT = b._live?.teeTime || '';
+    return aT < bT ? -1 : aT > bT ? 1 : 0;
   });
 
   // Team total score
