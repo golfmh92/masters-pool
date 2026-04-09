@@ -3057,18 +3057,29 @@ async function fetchLiveScores() {
           }));
         }
 
-        if (dv !== undefined && dv !== null) {
+        if (dv !== undefined && dv !== null && dv !== '-') {
           const roundToPar = dv === 'E' ? 0 : parseInt(dv);
           if (!isNaN(roundToPar)) {
             if (holesPlayed >= 18) {
-              // Round complete — store final score
+              // Round complete (hole data available)
               roundScores['r' + (i + 1)] = PAR + roundToPar;
             } else if (holesPlayed > 0) {
-              // Mid-round — don't store as final score
+              // Mid-round with hole data
               currentRound = i + 1;
               finished = false;
               thruHoles = '' + holesPlayed;
-              roundScores['r' + (i + 1) + '_toPar'] = roundToPar; // store round toPar for display
+              roundScores['r' + (i + 1) + '_toPar'] = roundToPar;
+            } else {
+              // No hole data — check if a later round has data (means this round is complete)
+              // or if status indicates completion
+              const laterRoundHasData = linescores.slice(i + 1).some(ls => {
+                const ldv = ls.displayValue;
+                return ldv && ldv !== '-' && ldv !== 'None';
+              });
+              const statusDone = c.status?.type?.state === 'post' || (c.status?.period > i + 1);
+              if (laterRoundHasData || statusDone) {
+                roundScores['r' + (i + 1)] = PAR + roundToPar;
+              }
             }
           }
         }
