@@ -2301,7 +2301,9 @@ function renderTournament() {
 
   // Build FULL player list (unfiltered) for rank computation
   let allPlayers = entries.map(([name, data]) => {
-    const draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(name));
+    // Match by normalizeName first, then by stored ESPN name (handles ESPN name differences)
+    let draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(name));
+    if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === name);
     const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
     const manualStatus = draftedGolfer ? golferStatus(draftedGolfer) : null;
     if (manualStatus === 'wd') data = { ...data, status: 'wd' };
@@ -2479,7 +2481,8 @@ function showScorecardByName(playerName) {
     showToast('Keine Loch-Daten verfügbar');
     return;
   }
-  const draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(playerName));
+  let draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(playerName));
+  if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === playerName);
   const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
 
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(playerName, team?.name, data.headshot);
@@ -3006,10 +3009,16 @@ async function freezeFinalScores() {
 
 function applyLiveScores() {
   for (const g of S.golfers) {
-    const live = matchGolferToLive(g.name);
+    // Find ESPN name and store it for reverse lookups in tournament leaderboard
+    let espnName = null;
+    for (const [liveName, data] of Object.entries(S.liveScores)) {
+      if (matchGolferToLive(g.name) === data) { espnName = liveName; break; }
+    }
+    const live = espnName ? S.liveScores[espnName] : null;
     if (!live) continue;
     g._live = live;
     g._liveMatched = true;
+    g._espnName = espnName;
     if (live.status === 'cut' && g.made_cut) {
       g._liveCut = true;
       g.made_cut = false;
