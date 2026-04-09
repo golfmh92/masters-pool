@@ -1787,8 +1787,10 @@ function renderMeineGolfer() {
       ${avatarHtml}
       <div class="mg-info">
         <div class="mg-name">${esc(shortName(g.name))}</div>
-        <div class="mg-score ${scoreCls}">${fmtScore(toPar)}</div>
-        ${isCut ? `<div class="mg-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru ? `<div class="mg-thru">${thru}</div>` : '')}
+        ${g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.teeTime
+          ? `<div class="lb-teetime">${fmtTeeTime(g._live.teeTime, g._live.startHole)}</div>`
+          : `<div class="mg-score ${scoreCls}">${fmtScore(toPar)}</div>`}
+        ${isCut ? `<div class="mg-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru && thru !== '0' ? `<div class="mg-thru">${thru}</div>` : '')}
       </div>
     </div>`;
   }
@@ -1919,6 +1921,10 @@ function renderLeaderboard() {
             const rel = sc !== null ? sc - PAR - bonus : null;
             const sCls = scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
+            // Tee time in the current round cell only (not Σ)
+            if (g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.nextRound === r && g._live.roundTeeTimes && g._live.roundTeeTimes[r - 1]) {
+              return `<div class="golfer-rd lb-teetime" style="font-size:10px;line-height:1.1">${fmtTeeTime(g._live.roundTeeTimes[r - 1], g._live.startHole)}</div>`;
+            }
             // Mid-round: show toPar + thru instead of score
             if (g._live && g._live.currentRound === r && !g._live.finished) {
               const rtp = g._live['r' + r + '_toPar'] !== undefined ? g._live['r' + r + '_toPar'] : g._live.toPar;
@@ -2869,7 +2875,7 @@ async function fetchLiveScores() {
 
       // Status/thru info
       const status = c.status || {};
-      const statusThru = status.thru > 0 ? '' + status.thru : (status.displayValue || '');
+      const statusThru = status.thru > 0 ? '' + status.thru : '';
       const statusType = status.type?.name || '';
       const statusState = status.type?.state || '';
       // c.score is object {value, displayValue} on web endpoint
