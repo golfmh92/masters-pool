@@ -1745,21 +1745,64 @@ function renderPayoutsView() {
   }
 }
 
-function buildPodiumHtml(activeRanking, p1, p2, p3) {
-  const places = [
-    { place: '1.', cls: 'gold', barCls: 'p1', amount: p1, name: activeRanking[0]?.name },
-    { place: '2.', cls: 'silver', barCls: 'p2', amount: p2, name: activeRanking[1]?.name },
-    { place: '3.', cls: 'bronze', barCls: 'p3', amount: p3, name: activeRanking[2]?.name }
-  ].filter(p => p.name);
-  const podiumOrder = places.length >= 2 ? [places[1], places[0], ...(places[2] ? [places[2]] : [])] : [...places];
-  let html = '<div class="podium">';
+function buildPodiumHtml(activeRanking, payouts) {
+  // Build podium entries from actual ranks (handles ties)
+  const barColors = { 1: 'linear-gradient(180deg,var(--gold),var(--gold2))', 2: 'linear-gradient(180deg,var(--text3),#6B7280)', 3: 'linear-gradient(180deg,#CD7F32,#A0653C)' };
+  const placeColors = { 1: 'var(--gold)', 2: 'var(--text3)', 3: '#CD7F32' };
+  const barHeights = { 1: 64, 2: 44, 3: 28 };
+
+  // Collect all prize recipients with their rank
+  const entries = [];
+  let rank = 1;
+  let i = 0;
+  while (i < activeRanking.length && rank <= 3) {
+    const currentTotal = activeRanking[i].total;
+    const tied = [];
+    for (let j = i; j < activeRanking.length && activeRanking[j].total === currentTotal; j++) tied.push(j);
+    const isTied = tied.length > 1;
+    const label = isTied ? 'T' + rank + '.' : rank + '.';
+    for (const j of tied) {
+      const t = activeRanking[j];
+      const amount = payouts[t.name] || 0;
+      if (amount > 0 || rank <= 3) {
+        entries.push({ rank, label, name: t.name, amount, bar: barColors[rank] || barColors[3], color: placeColors[rank] || placeColors[3], height: barHeights[rank] || barHeights[3] });
+      }
+    }
+    rank += tied.length;
+    i += tied.length;
+  }
+
+  if (entries.length === 0) return '';
+
+  // Podium order: put rank 1 in center (index 0=left, 1=center for <=2, or shuffle for 3+)
+  let podiumOrder;
+  if (entries.length === 1) {
+    podiumOrder = entries;
+  } else if (entries.length === 2) {
+    podiumOrder = [entries[1], entries[0]];
+  } else {
+    // Find first rank-1 entry for center, rest fill sides
+    const rank1 = entries.filter(e => e.rank === 1);
+    const rest = entries.filter(e => e.rank !== 1);
+    if (rank1.length === 1) {
+      // Classic: 2nd left, 1st center, 3rd+ right
+      const left = rest.filter((_, i) => i % 2 === 0);
+      const right = rest.filter((_, i) => i % 2 === 1);
+      podiumOrder = [...left, ...rank1, ...right];
+    } else {
+      // Multiple T1 or all same rank — just show in order
+      podiumOrder = entries;
+    }
+  }
+
+  let html = '<div class="podium" style="flex-wrap:wrap">';
   podiumOrder.forEach(p => {
     const mine = S.myName && p.name === S.myName;
     html += `<div class="podium-slot${mine ? ' mine' : ''}">
-      <div class="podium-place ${p.cls}">${p.place}</div>
+      <div class="podium-place" style="color:${p.color}">${p.label}</div>
       <div class="podium-name">${esc(p.name)}</div>
       <div class="podium-amount">${fmtMoney(p.amount)}</div>
-      <div class="podium-bar ${p.barCls}"></div>
+      <div class="podium-bar" style="height:${p.height}px;background:${p.bar}"></div>
     </div>`;
   });
   html += '</div>';
@@ -1829,7 +1872,7 @@ function buildPersonalPayoutHtml(pot, ranking) {
   let html = '';
 
   // Podium
-  html += buildPodiumHtml(activeRanking, p1, p2, p3);
+  html += buildPodiumHtml(activeRanking, payouts);
 
   // Personal summary card
   html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin:16px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -1894,7 +1937,7 @@ function buildPayoutHtml(pot, ranking) {
   }
 
   // Render — Podium + Transfer cards
-  const podiumHtml = buildPodiumHtml(activeRanking, p1, p2, p3);
+  const podiumHtml = buildPodiumHtml(activeRanking, payouts);
 
   // Build transfer cards
   let transferHtml = '';
