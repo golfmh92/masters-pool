@@ -824,7 +824,7 @@ const ESPN_GOLF_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/le
 const ESPN_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Wednesday — tee times visible before R1
 const CUT_TOP = 50; // Top 50 + Ties (Masters)
-const LIVE_REFRESH_MS = 15000; // 15 seconds when live
+const LIVE_REFRESH_MS = 20000; // 20 seconds when live
 const IDLE_REFRESH_MS = 1800000; // 30 minutes when not playing
 
 /* ===================== Supabase ===================== */
@@ -3054,13 +3054,21 @@ async function fetchLiveScores() {
     S.liveActive = anyonePlaying;
     updateLiveBadge(anyonePlaying);
     applyLiveScores();
-    // Preload headshot images in background
-    Object.values(scores).forEach(s => { if (s.headshot) { new Image().src = s.headshot; } });
-    // Freeze final scores to Supabase when tournament ends
-    if (S.tournamentFinished && !localStorage.getItem('masters_frozen')) {
-      freezeFinalScores();
+
+    // Skip render if data hasn't changed (saves CPU/battery)
+    const fingerprint = Object.entries(scores).map(([n, s]) => `${n}:${s.toPar}:${s.thru}:${s.statusState}`).join('|');
+    const changed = fingerprint !== S._lastFingerprint;
+    S._lastFingerprint = fingerprint;
+
+    if (changed) {
+      // Preload headshot images in background
+      Object.values(scores).forEach(s => { if (s.headshot) { new Image().src = s.headshot; } });
+      // Freeze final scores to Supabase when tournament ends
+      if (S.tournamentFinished && !localStorage.getItem('masters_frozen')) {
+        freezeFinalScores();
+      }
+      render();
     }
-    render();
   } catch (err) {
     console.warn('Live scoring fetch failed:', err);
     S.liveActive = false;
