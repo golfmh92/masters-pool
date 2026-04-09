@@ -107,7 +107,6 @@ body::before{content:'';position:fixed;inset:0;background:
 .lb-total.over{color:#000}
 .lb-total.even{color:#2563EB}
 .lb-bonus{font-size:10px;color:var(--gold2);margin-top:1px}
-.lb-teetime{font-size:13px;color:var(--text3,#888);font-weight:500;letter-spacing:0.3px;line-height:1.2;text-align:center}
 
 .eliminated-badge{display:inline-flex;align-items:center;gap:3px;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:6px}
 
@@ -811,8 +810,8 @@ body::before{content:'';position:fixed;inset:0;background:
 /* ===================== Constants ===================== */
 const PAR = 72; // Augusta National
 const ENTRY_FEE = 20;
-const ESPN_GOLF_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?league=pga';
-const TOURNAMENT_START = new Date('2026-04-09T00:00:00'); // Masters Wednesday — tee times visible before R1
+const ESPN_GOLF_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+const TOURNAMENT_START = new Date('2026-04-10T00:00:00'); // Masters Thursday R1
 const CUT_TOP = 50; // Top 50 + Ties (Masters)
 const LIVE_REFRESH_MS = 15000; // 15 seconds when live
 const IDLE_REFRESH_MS = 1800000; // 30 minutes when not playing
@@ -994,11 +993,7 @@ function golferStatus(g) {
     return (hasScores || hasLiveScores) ? 'cut' : 'wd';
   }
   // 2. ESPN live status
-  if (g._live) {
-    if (g._live.outStatus === 'dq') return 'dq';
-    if (g._live.outStatus === 'wd') return 'wd';
-    if (g._live.outStatus === 'cut' || g._live.status === 'cut') return 'cut';
-  }
+  if (g._live && g._live.status === 'cut') return 'cut';
   return 'active';
 }
 
@@ -1079,13 +1074,6 @@ function fmtScore(val) {
   if (val === null || val === undefined) return '—';
   if (val === 0) return 'E';
   return val > 0 ? `+${val}` : `${val}`;
-}
-
-function fmtTeeTime(iso, startHole) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const hm = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna' });
-  return startHole === 10 ? `${hm} ·10` : hm;
 }
 
 function scoreClass(val) {
@@ -1919,10 +1907,6 @@ function renderLeaderboard() {
             const rel = sc !== null ? sc - PAR - bonus : null;
             const sCls = scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
-            // Tee time: show if player hasn't started this round yet
-            if (g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.roundTeeTimes && g._live.roundTeeTimes[r - 1]) {
-              return `<div class="golfer-rd lb-teetime" style="font-size:10px;line-height:1.1">${fmtTeeTime(g._live.roundTeeTimes[r - 1], g._live.startHole)}</div>`;
-            }
             // Mid-round: show toPar + thru instead of score
             if (g._live && g._live.currentRound === r && !g._live.finished) {
               const rtp = g._live['r' + r + '_toPar'] !== undefined ? g._live['r' + r + '_toPar'] : g._live.toPar;
@@ -1932,18 +1916,13 @@ function renderLeaderboard() {
             const bonusBadge = r === 1 && bonus > 0 ? `<div style="font-size:8px;color:var(--gold2);line-height:1;margin-top:2px">★-${bonus}</div>` : '';
             return `<div class="golfer-rd ${sCls}" style="height:auto;${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${sc !== null ? sc : '—'}${bonusBadge}</div>`;
           }).join('');
-          // Live toPar + thru column (or tee time if not started)
-          let liveHtml;
-          if (g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.teeTime) {
-            liveHtml = `<div style="width:40px;text-align:center" class="lb-teetime">${fmtTeeTime(g._live.teeTime, g._live.startHole)}</div>`;
-          } else if (g._live) {
-            liveHtml = `<div style="width:40px;text-align:center;font-size:11px;line-height:1.2">
+          // Live toPar + thru column
+          const liveHtml = g._live
+            ? `<div style="width:40px;text-align:center;font-size:11px;line-height:1.2">
                 <div style="font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</div>
                 ${g._live.thru && g._live.thru !== 'F' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
-              </div>`;
-          } else {
-            liveHtml = '<div style="width:40px"></div>';
-          }
+              </div>`
+            : '<div style="width:40px"></div>';
           const cutBadge = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
           return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer" onclick="event.stopPropagation();showScorecard('${g.id}')">
             <div class="golfer-name">${esc(shortName(g.name))}${cutBadge}</div>
@@ -1959,16 +1938,11 @@ function renderLeaderboard() {
           const sCls = scoreClass(rel);
           const counting = countingMap[g.id + '_' + rd];
           const thru = (g._live && g._live.thru && !isCut) ? g._live.thru : '';
-          // Show tee time if player hasn't started, or toPar + thru if mid-round
+          // Show toPar + thru if no final round score yet and live data available
           const hasRoundScore = sc !== null;
-          let liveInfo = '';
-          if (!hasRoundScore && g._live && !isCut && !S.eventFinished) {
-            if (!g._live.outStatus && g._live.statusState === 'pre' && g._live.roundTeeTimes && g._live.roundTeeTimes[rd - 1]) {
-              liveInfo = `<span class="lb-teetime">${fmtTeeTime(g._live.roundTeeTimes[rd - 1], g._live.startHole)}</span>`;
-            } else if (g._live.toPar !== undefined) {
-              liveInfo = `<span style="font-size:12px;font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</span>${thru ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${thru}</span>` : ''}`;
-            }
-          }
+          const liveInfo = (!hasRoundScore && g._live && !isCut)
+            ? `<span style="font-size:12px;font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</span>${thru ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${thru}</span>` : ''}`
+            : '';
           const golferBonus = rd === 1 ? getGolferBonus(g.id) : 0;
           const golferBonusHtml = golferBonus > 0 ? `<span style="font-size:10px;color:var(--gold2);margin-left:4px">★-${golferBonus}</span>` : '';
           const cutBadgeRd = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
@@ -2807,8 +2781,7 @@ async function fetchLiveScores() {
     S.liveEventName = mastersEvent.name || 'Tournament';
     const eventState = mastersEvent.status?.type?.state || '';
     S.tournamentLive = eventState === 'in';
-    S.tournamentFinished = eventState === 'post' || mastersEvent.status?.type?.completed === true;
-    S.eventFinished = S.tournamentFinished;
+    S.tournamentFinished = eventState === 'post';
 
     const competitions = mastersEvent.competitions || [];
     if (competitions.length === 0) { updateLiveBadge(false); return; }
@@ -2821,7 +2794,7 @@ async function fetchLiveScores() {
       const athlete = c.athlete || {};
       const rawName = athlete.displayName || athlete.shortName || '';
       if (!rawName) continue;
-      const isAmateur = c.amateur || /\(a\)\s*$/.test(rawName);
+      const isAmateur = /\(a\)\s*$/.test(rawName);
       const name = rawName.replace(/\s*\(a\)\s*$/, '');
 
       const linescores = c.linescores || [];
@@ -2865,49 +2838,27 @@ async function fetchLiveScores() {
 
       // Status/thru info
       const status = c.status || {};
-      const statusThru = status.thru > 0 ? '' + status.thru : (status.displayValue || '');
+      const statusThru = status.displayValue || '';
       const statusType = status.type?.name || '';
-      const statusState = status.type?.state || '';
-      // c.score is object {value, displayValue} on web endpoint
-      const scoreObj = c.score || {};
-      const scoreDV = typeof scoreObj === 'object' ? (scoreObj.displayValue || '') : scoreObj;
-      const totalToPar = scoreDV === 'E' || scoreDV === '-' ? 0 : parseInt(scoreDV) || 0;
+      const totalToPar = c.score === 'E' ? 0 : parseInt(c.score) || 0;
       const thru = statusThru || thruHoles;
-
-      // Detect WD/DQ/Cut from ESPN status
-      const stName = (statusType || '').toLowerCase();
-      const stDesc = (status.type?.description || '').toLowerCase();
-      let outStatus = null;
-      if (stName === 'cut' || stDesc.includes('cut')) outStatus = 'cut';
-      else if (stName === 'wd' || stName === 'status_wd' || stDesc.includes('withdraw')) outStatus = 'wd';
-      else if (stName === 'dq' || stName === 'status_dq' || stDesc.includes('disqual')) outStatus = 'dq';
 
       // Detect missed cut (fallback): ESPN status or old linescore heuristic
       const maxRounds = linescores.length;
       const completedRounds = Object.keys(roundScores).filter(k => !k.includes('toPar')).length;
-      const isCut = outStatus === 'cut' ||
+      const isCut = (statusType && statusType.toLowerCase() === 'cut') ||
                     (maxRounds <= 2 && completedRounds >= 2 && currentRound === 0 && finished);
-
-      // Tee times from status + per-round linescores
-      const teeTime = status.teeTime || null;
-      const startHole = status.startHole || 1;
-      const roundTeeTimes = linescores.map(ls => ls.teeTime || null);
 
       scores[name] = {
         ...roundScores,
         holes,
         toPar: totalToPar,
         thru: thru,
-        status: isCut ? 'cut' : (outStatus || statusType),
-        outStatus: outStatus,
-        madeCut: !isCut && outStatus !== 'wd' && outStatus !== 'dq',
+        status: isCut ? 'cut' : statusType,
+        madeCut: !isCut,
         _amateur: isAmateur,
         currentRound,
         finished: finished,
-        statusState,
-        teeTime,
-        startHole,
-        roundTeeTimes,
         headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : ''
       };
     }
