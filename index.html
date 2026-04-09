@@ -877,6 +877,7 @@ async function init() {
   // Restore favorites
   try { S.favorites = new Set(JSON.parse(localStorage.getItem('masters_pool_favs') || '[]')); } catch(e) { S.favorites = new Set(); }
   track('app_open');
+  S._tabStart = Date.now();
   // Load Supabase data + ESPN scores in parallel, with minimum splash duration
   const splashMin = new Promise(r => setTimeout(r, 1200));
   await Promise.all([loadAll(), fetchLiveScores(), splashMin]);
@@ -1554,11 +1555,24 @@ async function renderAnalytics() {
   const opensToday = today.filter(e => e.event === 'app_open').length;
   const opensWeek = all.filter(e => e.event === 'app_open').length;
 
-  // Tab counts
+  const tabNames = { leaderboard: 'Leaderboard', tournament: 'Turnier', rangliste: 'Rangliste', payouts: 'Payouts', stats: 'Stats', rules: 'Regeln', admin: 'Admin' };
+
+  // Tab click counts
   const tabEvents = all.filter(e => e.event === 'tab');
   const tabCounts = {};
   tabEvents.forEach(e => { tabCounts[e.detail] = (tabCounts[e.detail] || 0) + 1; });
-  const tabNames = { leaderboard: 'Leaderboard', tournament: 'Turnier', rangliste: 'Rangliste', payouts: 'Payouts', stats: 'Stats', rules: 'Regeln', admin: 'Admin' };
+
+  // Tab time (verweildauer)
+  const tabTimeEvents = all.filter(e => e.event === 'tab_time' && e.detail);
+  const tabTimes = {}; // {tab: {total, count}}
+  tabTimeEvents.forEach(e => {
+    const [tab, secsStr] = e.detail.split(':');
+    const secs = parseInt(secsStr);
+    if (!tab || isNaN(secs)) return;
+    if (!tabTimes[tab]) tabTimes[tab] = { total: 0, count: 0 };
+    tabTimes[tab].total += secs;
+    tabTimes[tab].count++;
+  });
 
   // Top scorecards
   const scEvents = all.filter(e => e.event === 'scorecard');
@@ -1566,38 +1580,78 @@ async function renderAnalytics() {
   scEvents.forEach(e => { scCounts[e.detail] = (scCounts[e.detail] || 0) + 1; });
   const topScorecards = Object.entries(scCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
+  // Map session IDs to user numbers
+  const sessionIds = [...new Set(all.map(e => e.session_id))];
+  const userNum = {};
+  sessionIds.forEach((sid, i) => { userNum[sid] = i + 1; });
+
+  function fmtDuration(secs) {
+    if (secs < 60) return secs + 's';
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return s > 0 ? m + 'm ' + s + 's' : m + 'm';
+  }
+
   let html = '';
 
-  // Summary cards
+  // --- Summary cards with descriptions ---
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
     <div class="card" style="text-align:center;padding:14px">
       <div style="font-size:28px;font-weight:700;color:var(--green)">${sessionsToday}</div>
-      <div style="font-size:11px;color:var(--text3)">Sessions heute</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text2)">Nutzer heute</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px">Verschiedene Geräte</div>
     </div>
     <div class="card" style="text-align:center;padding:14px">
       <div style="font-size:28px;font-weight:700;color:var(--green)">${sessionsWeek}</div>
-      <div style="font-size:11px;color:var(--text3)">Sessions 7 Tage</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text2)">Nutzer 7 Tage</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px">Verschiedene Geräte</div>
     </div>
     <div class="card" style="text-align:center;padding:14px">
       <div style="font-size:28px;font-weight:700;color:var(--green)">${opensToday}</div>
-      <div style="font-size:11px;color:var(--text3)">App-Opens heute</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text2)">Besuche heute</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px">App-Öffnungen gesamt</div>
     </div>
     <div class="card" style="text-align:center;padding:14px">
       <div style="font-size:28px;font-weight:700;color:var(--green)">${opensWeek}</div>
-      <div style="font-size:11px;color:var(--text3)">App-Opens 7 Tage</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text2)">Besuche 7 Tage</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px">App-Öffnungen gesamt</div>
     </div>
   </div>`;
 
-  // Tab usage
+  // --- Verweildauer pro Bereich ---
+  const tabTimeEntries = Object.entries(tabTimes).sort((a, b) => b[1].total - a[1].total);
+  if (tabTimeEntries.length > 0) {
+    const maxTime = tabTimeEntries[0][1].total;
+    html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:4px">Verweildauer</div>';
+    html += '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">Wie lange User in jedem Bereich bleiben (Gesamt / Durchschnitt)</div>';
+    html += '<div class="card" style="padding:12px;margin-bottom:16px">';
+    tabTimeEntries.forEach(([tab, d]) => {
+      const avg = Math.round(d.total / d.count);
+      const pct = Math.round(d.total / maxTime * 100);
+      html += `<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span>${tabNames[tab] || tab}</span>
+          <span style="color:var(--text3)">${fmtDuration(d.total)} · \u00D8 ${fmtDuration(avg)}</span>
+        </div>
+        <div style="height:6px;background:var(--bg2);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:var(--gold);border-radius:3px"></div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // --- Tab-Klicks ---
   const sortedTabs = Object.entries(tabCounts).sort((a, b) => b[1] - a[1]);
   const maxTab = sortedTabs.length > 0 ? sortedTabs[0][1] : 1;
-  html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:8px">Tab-Nutzung (7 Tage)</div>';
+  html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:4px">Bereich-Klicks</div>';
+  html += '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">Wie oft jeder Bereich angetippt wurde</div>';
   html += '<div class="card" style="padding:12px;margin-bottom:16px">';
   sortedTabs.forEach(([tab, count]) => {
     const pct = Math.round(count / maxTab * 100);
     html += `<div style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span>${tabNames[tab] || tab}</span><span style="color:var(--text3)">${count}</span>
+        <span>${tabNames[tab] || tab}</span><span style="color:var(--text3)">${count}x</span>
       </div>
       <div style="height:6px;background:var(--bg2);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:var(--green);border-radius:3px"></div>
@@ -1606,9 +1660,10 @@ async function renderAnalytics() {
   });
   html += '</div>';
 
-  // Top scorecards
+  // --- Top Scorecards ---
   if (topScorecards.length > 0) {
-    html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:8px">Top Scorecards (7 Tage)</div>';
+    html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:4px">Beliebteste Scorecards</div>';
+    html += '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">Welche Spieler am meisten angeklickt werden</div>';
     html += '<div class="card" style="padding:12px;margin-bottom:16px">';
     topScorecards.forEach(([name, count], i) => {
       html += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;${i < topScorecards.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
@@ -1618,19 +1673,23 @@ async function renderAnalytics() {
     html += '</div>';
   }
 
-  // Recent activity
-  html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:8px">Letzte Events</div>';
+  // --- Letzte Aktivitäten ---
+  html += '<div style="font-family:var(--font-display);font-size:15px;color:var(--green);margin-bottom:4px">Letzte Aktivitäten</div>';
+  html += '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">Was gerade in der App passiert</div>';
   html += '<div class="card" style="padding:12px">';
-  const recent = all.slice(0, 15);
+  const recent = all.filter(e => e.event !== 'tab_time').slice(0, 20);
   recent.forEach((e, i) => {
     const t = new Date(e.created_at);
     const time = t.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
     const date = t.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' });
-    const label = e.event === 'app_open' ? 'App geöffnet' : e.event === 'tab' ? `Tab: ${tabNames[e.detail] || e.detail}` : e.event === 'scorecard' ? `Scorecard: ${e.detail}` : e.event;
-    const sid = e.session_id.slice(0, 6);
+    const label = e.event === 'app_open' ? 'App geöffnet'
+      : e.event === 'tab' ? `${tabNames[e.detail] || e.detail} geöffnet`
+      : e.event === 'scorecard' ? `Scorecard: ${e.detail}`
+      : e.event;
+    const uNum = userNum[e.session_id] || '?';
     html += `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:var(--text2);${i < recent.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
       <span>${label}</span>
-      <span style="color:var(--text3)">${sid} · ${date} ${time}</span>
+      <span style="color:var(--text3)">User ${uNum} · ${date} ${time}</span>
     </div>`;
   });
   html += '</div>';
@@ -2255,6 +2314,12 @@ function renderDraft() {
 
 /* ===================== Tab Switching ===================== */
 function switchTab(tab) {
+  // Track time spent on previous tab
+  if (S._tabStart && S.activeTab) {
+    const secs = Math.round((Date.now() - S._tabStart) / 1000);
+    if (secs > 1 && secs < 3600) track('tab_time', S.activeTab + ':' + secs);
+  }
+  S._tabStart = Date.now();
   S.activeTab = tab;
   track('tab', tab);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -3335,11 +3400,19 @@ function startLiveRefresh() {
   // Pause polling when app is in background to save battery
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      // Track time on current tab before going to background
+      if (S._tabStart && S.activeTab) {
+        const secs = Math.round((Date.now() - S._tabStart) / 1000);
+        if (secs > 1 && secs < 3600) track('tab_time', S.activeTab + ':' + secs);
+        S._tabStart = null;
+      }
       clearInterval(S.liveTimer);
       clearInterval(S.badgeTimer);
       S.liveTimer = null;
       S.badgeTimer = null;
     } else {
+      // Restart tab timer
+      S._tabStart = Date.now();
       // App became visible — fetch fresh data immediately, then resume polling
       fetchLiveScores();
       const interval = S._currentInterval || LIVE_REFRESH_MS;
