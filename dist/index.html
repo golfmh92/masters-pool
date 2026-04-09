@@ -856,6 +856,8 @@ async function init() {
   // Restore favorites
   try { S.favorites = new Set(JSON.parse(localStorage.getItem('masters_pool_favs') || '[]')); } catch(e) { S.favorites = new Set(); }
   await loadAll();
+  // Fetch live scores (incl. tee times) before first render so they're immediately visible
+  await fetchLiveScores();
   updateIdentityBar();
   render();
 }
@@ -3045,7 +3047,7 @@ function updateLiveBadge(active) {
 
 function startLiveRefresh() {
   fetchMastersField();
-  fetchLiveScores();
+  // fetchLiveScores() already called in init() — skip initial call, just start polling
   S.liveTimer = setInterval(fetchLiveScores, LIVE_REFRESH_MS);
   setInterval(() => {
     updateLiveBadge(S.liveActive);
