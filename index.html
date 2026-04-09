@@ -1565,11 +1565,6 @@ async function renderAnalytics() {
   scEvents.forEach(e => { scCounts[e.detail] = (scCounts[e.detail] || 0) + 1; });
   const topScorecards = Object.entries(scCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  // Device split
-  const mobileCount = all.filter(e => e.device === 'mobile').length;
-  const desktopCount = all.filter(e => e.device === 'desktop').length;
-  const mobilePct = Math.round(mobileCount / all.length * 100);
-
   let html = '';
 
   // Summary cards
@@ -1587,8 +1582,8 @@ async function renderAnalytics() {
       <div style="font-size:11px;color:var(--text3)">App-Opens heute</div>
     </div>
     <div class="card" style="text-align:center;padding:14px">
-      <div style="font-size:28px;font-weight:700;color:var(--green)">${mobilePct}%</div>
-      <div style="font-size:11px;color:var(--text3)">Mobile</div>
+      <div style="font-size:28px;font-weight:700;color:var(--green)">${opensWeek}</div>
+      <div style="font-size:11px;color:var(--text3)">App-Opens 7 Tage</div>
     </div>
   </div>`;
 
