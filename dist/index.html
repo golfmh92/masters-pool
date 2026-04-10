@@ -2349,6 +2349,8 @@ function switchTab(tab) {
   S._tabStart = Date.now();
   S.activeTab = tab;
   track('tab', tab);
+  // Close all open accordions
+  document.querySelectorAll('.lb-entry.open, .payout-card.open, .st-category.open').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const view = document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1));
   view.classList.add('active');
