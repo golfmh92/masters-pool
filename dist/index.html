@@ -2022,7 +2022,8 @@ function renderMeineGolfer() {
   const teamTotal = myTeam ? fmtScore(myTeam.total) : '—';
   const teamCls = myTeam && myTeam.total !== null ? (myTeam.total < 0 ? 'under' : myTeam.total > 0 ? 'over' : 'even') : '';
 
-  let html = `<div class="mg-strip"><div class="mg-title">Meine Golfer <span class="mg-score ${teamCls}" style="font-size:14px;margin-left:6px">${teamTotal}</span></div><div class="mg-scroll">`;
+  const cutLabel = S.projectedCut !== null && !S.eventFinished ? `<span style="font-size:11px;color:var(--text3);font-weight:400">Proj. Cut ${fmtScore(S.projectedCut)}</span>` : '';
+  let html = `<div class="mg-strip"><div class="mg-title" style="display:flex;align-items:center"><span>Meine Golfer <span class="mg-score ${teamCls}" style="font-size:14px;margin-left:6px">${teamTotal}</span></span><span style="flex:1"></span>${cutLabel}</div><div class="mg-scroll">`;
   for (const g of sortedGolfers) {
     const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
     const isCounting = countingIds.has(g.id);
