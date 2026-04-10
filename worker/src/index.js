@@ -38,6 +38,15 @@ async function checkForEvents(env) {
 
     if (!golfers.length || !subscriptions.length) return;
 
+    // Preload all seen event IDs in ONE KV.list call (instead of hundreds of KV.get)
+    const seenKeys = new Set();
+    let cursor = undefined;
+    do {
+      const listResp = await env.KV.list(cursor ? { cursor } : {});
+      for (const k of listResp.keys) seenKeys.add(k.name);
+      cursor = listResp.list_complete ? undefined : listResp.cursor;
+    } while (cursor);
+
     // Build golfer→participant mapping (normalize names for matching)
     const golferMap = {}; // espnName → [{participant_id, participantName}]
     for (const g of golfers) {
@@ -67,10 +76,10 @@ async function checkForEvents(env) {
           if (pv > -2 && pv < 2) continue;
 
           const eventId = `${name}_r${r + 1}_h${h.period}`;
-          const seen = await env.KV.get(eventId);
-          if (seen) continue;
+          if (seenKeys.has(eventId)) continue;
 
-          // Mark as seen
+          // Mark as seen (in-memory + KV)
+          seenKeys.add(eventId);
           await env.KV.put(eventId, '1', { expirationTtl: 86400 * 7 }); // expire after 7 days
 
           let emoji, label;
@@ -86,8 +95,8 @@ async function checkForEvents(env) {
         // Round finished detection: 18 holes played = round complete
         if (roundHoles.length >= 18) {
           const finishId = `${name}_r${r + 1}_finished`;
-          const seenFinish = await env.KV.get(finishId);
-          if (!seenFinish) {
+          if (!seenKeys.has(finishId)) {
+            seenKeys.add(finishId);
             await env.KV.put(finishId, '1', { expirationTtl: 86400 * 7 });
             const roundScore = roundHoles.reduce((sum, h) => sum + (h.value || 0), 0);
             const toPar = roundScore - 72; // Augusta PAR = 72

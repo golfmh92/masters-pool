@@ -57,6 +57,8 @@ body::before{content:'';position:fixed;inset:0;background:
 .live-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-body);font-size:10px;font-weight:600;color:var(--gold);letter-spacing:1px;margin-top:2px;text-transform:uppercase}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse-live 1.5s ease-in-out infinite}
 @keyframes pulse-live{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes scoreChange{0%{opacity:.3;transform:scale(.85)}40%{opacity:1;transform:scale(1.12)}100%{transform:scale(1)}}
+.score-changed{animation:scoreChange .5s cubic-bezier(.25,.8,.25,1)}
 .live-badge.stale{color:rgba(255,255,255,.4)}
 .live-badge.stale .live-dot{background:rgba(255,255,255,.4);animation:none}
 .header-admin{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);transition:all .2s}
@@ -1968,6 +1970,15 @@ function renderMeineGolfer() {
   if (!container) return;
   if (!S.myName) { container.innerHTML = ''; return; }
 
+  // Capture old scores for animation
+  const oldMgScores = {};
+  container.querySelectorAll('.mg-card').forEach(card => {
+    const nameEl = card.querySelector('.mg-name');
+    const scoreEl = card.querySelector('.mg-score');
+    if (nameEl && scoreEl) oldMgScores[nameEl.textContent] = scoreEl.textContent;
+  });
+  const oldTeamScore = container.querySelector('.mg-score')?.textContent;
+
   const myP = S.participants.find(p => p.name === S.myName);
   if (!myP) { container.innerHTML = ''; return; }
 
@@ -2048,6 +2059,21 @@ function renderMeineGolfer() {
   }
   html += '</div></div>';
   container.innerHTML = html;
+
+  // Animate changed scores in Meine Golfer
+  const newTeamScore = container.querySelector('.mg-score');
+  if (newTeamScore && oldTeamScore && newTeamScore.textContent !== oldTeamScore) {
+    newTeamScore.classList.add('score-changed');
+    newTeamScore.addEventListener('animationend', () => newTeamScore.classList.remove('score-changed'), { once: true });
+  }
+  container.querySelectorAll('.mg-card').forEach(card => {
+    const nameEl = card.querySelector('.mg-name');
+    const scoreEl = card.querySelector('.mg-score');
+    if (nameEl && scoreEl && oldMgScores[nameEl.textContent] !== undefined && scoreEl.textContent !== oldMgScores[nameEl.textContent]) {
+      scoreEl.classList.add('score-changed');
+      scoreEl.addEventListener('animationend', () => scoreEl.classList.remove('score-changed'), { once: true });
+    }
+  });
 }
 
 
@@ -2272,10 +2298,13 @@ function renderLeaderboard() {
 
   const list = document.getElementById('leaderboardList');
 
-  // FLIP animation: capture old positions
+  // Capture old positions and scores for animations
   const oldPositions = {};
+  const oldScores = {};
   list.querySelectorAll('.lb-entry[data-id]').forEach(el => {
     oldPositions[el.dataset.id] = el.getBoundingClientRect().top;
+    const scoreEl = el.querySelector('.lb-total');
+    if (scoreEl) oldScores[el.dataset.id] = scoreEl.textContent;
   });
 
   list.innerHTML = filteredRanking.map(renderLbEntry).join('');
@@ -2300,6 +2329,19 @@ function renderLeaderboard() {
         el.style.transition = 'transform 0.5s cubic-bezier(.25,.8,.25,1)';
         el.style.transform = '';
       });
+    });
+  }
+
+  // Animate changed scores
+  if (Object.keys(oldScores).length > 0) {
+    list.querySelectorAll('.lb-entry[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const scoreEl = el.querySelector('.lb-total');
+      if (!scoreEl || oldScores[id] === undefined) return;
+      if (scoreEl.textContent !== oldScores[id]) {
+        scoreEl.classList.add('score-changed');
+        scoreEl.addEventListener('animationend', () => scoreEl.classList.remove('score-changed'), { once: true });
+      }
     });
   }
 }
