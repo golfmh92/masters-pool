@@ -232,7 +232,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .mg-avatar-fb{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--green);color:#fff;font-weight:700;font-size:12px}
 .mg-info{min-width:0}
 .mg-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
-.mg-score{font-family:var(--font-display);font-size:16px;font-weight:700;line-height:1}
+.mg-score{font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1}
 .mg-score.under{color:var(--red)}
 .mg-score.over{color:#000}
 .mg-score.even{color:#2563EB}
@@ -2042,7 +2042,7 @@ function renderMeineGolfer() {
         ${g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.teeTime
           ? `<div class="lb-teetime">${fmtTeeTime(g._live.teeTime, g._live.startHole)}</div>`
           : `<div class="mg-score ${scoreCls}">${fmtScore(toPar)}</div>`}
-        ${isCut ? `<div class="mg-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru && thru !== '0' && thru !== 'F' ? `<div class="mg-thru">${thru}</div>` : '')}
+        ${isCut ? `<div class="mg-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : ''}
       </div>
     </div>`;
   }
