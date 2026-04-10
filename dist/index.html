@@ -193,6 +193,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .golfer-rd.birdie{color:#C0392B}
 .golfer-rd.even{color:#2563EB}
 .golfer-rd.bogey{color:#000}
+.golfer-rd.dbl{color:#fff;background:#000;border-radius:6px}
 .golfer-cut{font-size:10px;color:var(--red);font-weight:600;margin-left:8px}
 .scorecard-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .scorecard-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg2)}
@@ -1126,6 +1127,7 @@ function scoreClass(val) {
   if (val === null || val === undefined) return '';
   if (val < 0) return 'birdie';  // under par = red
   if (val === 0) return 'even';  // even par = blue
+  if (val >= 2) return 'dbl';    // double bogey+ = dark
   if (val > 0) return 'bogey';   // over par = black
   return '';
 }
@@ -2199,12 +2201,12 @@ function renderLeaderboard() {
             }
             return `<div class="golfer-rd ${sCls}" style="height:auto;${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${sc !== null ? sc : '—'}</div>`;
           }).join('');
-          // Live toPar + thru column
+          // Live toPar + thru column (Σ) — always show total if available
           let liveHtml;
-          if (g._live && g._live.statusState !== 'pre') {
+          if (g._live && g._live.toPar !== undefined) {
             liveHtml = `<div style="width:40px;text-align:center;font-size:11px;line-height:1.2">
                 <div style="font-weight:600;color:var(--green)">${fmtScore(g._live.toPar)}</div>
-                ${g._live.thru && g._live.thru !== 'F' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
+                ${g._live.thru && g._live.thru !== 'F' && g._live.statusState !== 'pre' ? `<div style="color:var(--text3);font-size:9px">${g._live.thru}</div>` : ''}
               </div>`;
           } else {
             liveHtml = '<div style="width:40px;text-align:center;font-size:11px;color:var(--text3)">—</div>';
@@ -2744,6 +2746,12 @@ function renderTournament() {
     html += restPlayers.map(renderTournamentEntry).join('');
   }
 
+  // Projected cut line
+  if (S.projectedCut !== null && !S.eventFinished) {
+    const cutHtml = `<div style="text-align:center;padding:6px 12px;margin-bottom:8px;font-size:12px;color:var(--text2);background:var(--bg2);border-radius:8px">Projected Cut: <strong>${fmtScore(S.projectedCut)}</strong></div>`;
+    html = cutHtml + html;
+  }
+
   list.innerHTML = html;
 }
 
@@ -2754,7 +2762,10 @@ function buildScorecardHeader(name, teamName, headshot, position) {
     : `<div class="scorecard-avatar-fallback">${initials}</div>`;
   const teamInfo = teamName ? `<div style="font-size:13px;color:var(--gold);font-weight:400;margin-top:1px">${esc(teamName)}</div>` : '';
   const posHtml = position ? `<div style="font-size:12px;color:var(--text3);margin-top:2px">Platz ${position}</div>` : '';
-  return `<div class="scorecard-header">${avatarHtml}<div class="scorecard-header-info"><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${esc(name)}</div>${teamInfo}${posHtml}</div></div>`;
+  // Debut star
+  const fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(name));
+  const debutStar = fieldEntry?.debut ? '<span style="color:var(--gold);font-size:14px;margin-left:4px">★</span>' : '';
+  return `<div class="scorecard-header">${avatarHtml}<div class="scorecard-header-info"><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${esc(name)}${debutStar}</div>${teamInfo}${posHtml}</div></div>`;
 }
 
 function showScorecardByName(playerName) {
@@ -2851,7 +2862,13 @@ function renderScorecardContent(live) {
           if (hole && hole.score) {
             total += hole.score;
             hasScore = true;
-            h += `<td><span class="${holeClass(hole.par)}">${Math.round(hole.score)}</span></td>`;
+            // Use hole.par from ESPN, fallback to calculating from Augusta pars
+            let relPar = hole.par;
+            if (!relPar || (relPar !== 'E' && isNaN(parseInt(relPar)))) {
+              const ap = AUGUSTA_PARS[i - 1];
+              if (ap) relPar = '' + (Math.round(hole.score) - ap);
+            }
+            h += `<td><span class="${holeClass(relPar)}">${Math.round(hole.score)}</span></td>`;
           } else {
             h += '<td style="color:var(--text3)">\u2014</td>';
           }
@@ -2878,6 +2895,46 @@ function renderScorecardContent(live) {
     html += buildNine(1, 9, 'OUT', true, false);
     html += '<div style="height:4px"></div>';
     html += buildNine(10, 18, 'IN', true, true);
+
+    // Per-golfer statistics
+    let birdies = 0, eagles = 0, pars = 0, bogeys = 0, dblPlus = 0, totalH = 0;
+    for (const r of activeRounds) {
+      const rh = live.holes['r' + r];
+      if (!rh) continue;
+      for (const h of rh) {
+        const pv = h.par === 'E' ? 0 : parseInt(h.par);
+        if (isNaN(pv)) {
+          // Fallback: calculate from Augusta pars
+          const ap = AUGUSTA_PARS[h.hole - 1];
+          if (ap && h.score) {
+            const diff = Math.round(h.score) - ap;
+            totalH++;
+            if (diff <= -2) eagles++;
+            else if (diff === -1) birdies++;
+            else if (diff === 0) pars++;
+            else if (diff === 1) bogeys++;
+            else dblPlus++;
+          }
+          continue;
+        }
+        totalH++;
+        if (pv <= -2) eagles++;
+        else if (pv === -1) birdies++;
+        else if (pv === 0) pars++;
+        else if (pv === 1) bogeys++;
+        else dblPlus++;
+      }
+    }
+    if (totalH > 0) {
+      const pct = v => Math.round(v / totalH * 100) + '%';
+      html += `<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center">
+        ${eagles > 0 ? `<div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#F4D03F">${eagles}</div><div style="color:var(--text3)">Eagle</div></div>` : ''}
+        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#E63946">${birdies}</div><div style="color:var(--text3)">Birdie</div></div>
+        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700">${pars}</div><div style="color:var(--text3)">Par</div></div>
+        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#2563EB">${bogeys}</div><div style="color:var(--text3)">Bogey</div></div>
+        ${dblPlus > 0 ? `<div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700">${dblPlus}</div><div style="color:var(--text3)">Dbl+</div></div>` : ''}
+      </div>`;
+    }
   }
 
   document.getElementById('scorecardContent').innerHTML = html;
@@ -3303,6 +3360,19 @@ async function fetchLiveScores() {
       }
     }
 
+    // Calculate projected cut line (during R1+R2, before actual cut)
+    S.projectedCut = null;
+    const allScoresArr = Object.values(scores);
+    const withScores = allScoresArr.filter(s => s.toPar !== undefined && s.status !== 'cut' && s.status !== 'wd' && s.status !== 'dq');
+    if (withScores.length > CUT_TOP && !S.eventFinished) {
+      const sorted = [...withScores].sort((a, b) => a.toPar - b.toPar);
+      let proCount = 0;
+      for (const s of sorted) {
+        if (!s._amateur) proCount++;
+        if (proCount === CUT_TOP) { S.projectedCut = s.toPar; break; }
+      }
+    }
+
     S.liveScores = scores;
     S.liveLastUpdate = new Date();
     // Show "Live" only when ESPN says event is "in" AND at least one player is mid-round
@@ -3398,14 +3468,19 @@ function updateLiveBadge(active) {
     text.textContent = 'Beendet';
     return;
   }
-  badge.style.display = 'inline-flex';
   if (active && S.liveLastUpdate) {
+    badge.style.display = 'inline-flex';
     badge.classList.remove('stale');
-    text.textContent = 'Live';
-  } else if (S.tournamentLive) {
-    badge.classList.add('stale');
-    text.textContent = 'Pause';
+    // Detect current round from live scores
+    let maxRound = 0;
+    if (S.liveScores) {
+      for (const s of Object.values(S.liveScores)) {
+        if (s.currentRound > maxRound) maxRound = s.currentRound;
+      }
+    }
+    text.textContent = maxRound > 0 ? `R${maxRound} in progress` : 'Live';
   } else {
+    // Nobody playing — hide badge
     badge.style.display = 'none';
   }
 }
