@@ -2902,7 +2902,9 @@ function renderScorecardContent(live) {
     for (const r of activeRounds) {
       const sc = live['r' + r];
       const tp = sc ? sc - PAR : null;
-      html += `<div style="font-size:13px;color:var(--text3)">R${r}: ${tp !== null ? fmtScore(tp) : (live.currentRound === r ? fmtScore(live.toPar) + ' (' + live.thru + ')' : '\u2014')}</div>`;
+      const roundToPar = live['r' + r + '_toPar'];
+      const midRoundDisplay = live.currentRound === r && roundToPar !== undefined ? fmtScore(roundToPar) + ' (' + live.thru + ')' : null;
+      html += `<div style="font-size:13px;color:var(--text3)">R${r}: ${tp !== null ? fmtScore(tp) : (midRoundDisplay || '\u2014')}</div>`;
     }
     html += '</div>';
 
