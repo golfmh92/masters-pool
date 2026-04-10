@@ -1,11 +1,10 @@
 // Masters Pool Push Notification Worker
-// Cron: every 2 minutes — polls ESPN, detects eagles/double bogeys, sends push notifications
+// Cron: every 2 minutes — sends ONE summary per team per round when all 5 golfers finished
 
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(checkForEvents(env));
   },
-  // Manual trigger for testing
   async fetch(request, env) {
     await checkForEvents(env);
     return new Response('OK - checked for events');
@@ -20,7 +19,6 @@ async function checkForEvents(env) {
     const json = await resp.json();
 
     const events = json.events || [];
-    // Find The Masters specifically
     let tournament = events.find(e =>
       e.name && (e.name.toLowerCase().includes('masters') || e.name.toLowerCase().includes('augusta'))
     );
@@ -31,123 +29,88 @@ async function checkForEvents(env) {
     if (!comp) return;
     const competitors = comp.competitors || [];
 
-    // 2. Fetch golfer→participant mapping from Supabase
+    // 2. Fetch data from Supabase
     const golfers = await supabaseGet(env, 'masters_golfers', 'id,name,participant_id');
     const participants = await supabaseGet(env, 'masters_participants', 'id,name');
-    const subscriptions = await supabaseGet(env, 'masters_push_subscriptions', 'participant_id,endpoint,p256dh,auth,favorites');
+    const subscriptions = await supabaseGet(env, 'masters_push_subscriptions', 'participant_id,endpoint,p256dh,auth');
 
     if (!golfers.length || !subscriptions.length) return;
 
-    // Preload all seen event IDs in ONE KV.list call (instead of hundreds of KV.get)
-    const seenKeys = new Set();
-    let cursor = undefined;
-    do {
-      const listResp = await env.KV.list(cursor ? { cursor } : {});
-      for (const k of listResp.keys) seenKeys.add(k.name);
-      cursor = listResp.list_complete ? undefined : listResp.cursor;
-    } while (cursor);
-
-    // Build golfer→participant mapping (normalize names for matching)
-    const golferMap = {}; // espnName → [{participant_id, participantName}]
-    for (const g of golfers) {
-      const norm = normalizeName(g.name);
-      if (!golferMap[norm]) golferMap[norm] = [];
-      const p = participants.find(p => p.id === g.participant_id);
-      golferMap[norm].push({ participant_id: g.participant_id, participantName: p?.name || '' });
-    }
-
-    // 3. Scan for events
-    const newEvents = [];
+    // 3. Build ESPN lookup: normalized name → competitor data
+    const espnMap = {};
     for (const c of competitors) {
-      const athlete = c.athlete || {};
-      const name = athlete.displayName || athlete.shortName || '';
+      const name = c.athlete?.displayName || c.athlete?.shortName || '';
       if (!name) continue;
-
-      const linescores = c.linescores || [];
-      for (let r = 0; r < linescores.length && r < 4; r++) {
-        const roundHoles = linescores[r].linescores || [];
-        for (const h of roundHoles) {
-          const parVal = h.scoreType?.displayValue;
-          if (!parVal) continue;
-          const pv = parVal === 'E' ? 0 : parseInt(parVal);
-          if (isNaN(pv)) continue;
-
-          // Only eagles+ or double bogeys+
-          if (pv > -2 && pv < 2) continue;
-
-          const eventId = `${name}_r${r + 1}_h${h.period}`;
-          if (seenKeys.has(eventId)) continue;
-
-          // Mark as seen (in-memory + KV)
-          seenKeys.add(eventId);
-          await env.KV.put(eventId, '1', { expirationTtl: 86400 * 7 }); // expire after 7 days
-
-          let emoji, label;
-          if (pv <= -3) { emoji = '🌟'; label = 'Albatross'; }
-          else if (h.value === 1) { emoji = '🔥'; label = 'Hole-in-One'; }
-          else if (pv <= -2) { emoji = '🦅'; label = 'Eagle'; }
-          else if (pv >= 3) { emoji = '🟥'; label = 'Triple Bogey+'; }
-          else { emoji = '🟡'; label = 'Doppel-Bogey'; }
-
-          newEvents.push({ name, eventId, emoji, label, hole: h.period, round: r + 1, pv });
-        }
-
-        // Round finished detection: 18 holes played = round complete
-        if (roundHoles.length >= 18) {
-          const finishId = `${name}_r${r + 1}_finished`;
-          if (!seenKeys.has(finishId)) {
-            seenKeys.add(finishId);
-            await env.KV.put(finishId, '1', { expirationTtl: 86400 * 7 });
-            const roundScore = roundHoles.reduce((sum, h) => sum + (h.value || 0), 0);
-            const toPar = roundScore - 72; // Augusta PAR = 72
-            const toParStr = toPar === 0 ? 'Even Par' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
-            newEvents.push({
-              name, eventId: finishId, emoji: '🏁',
-              label: `beendete R${r + 1} mit ${roundScore} Schlägen (${toParStr})`,
-              hole: null, round: r + 1, pv: null, isRoundFinish: true
-            });
-          }
-        }
-      }
+      espnMap[normalizeName(name)] = c;
     }
 
-    if (newEvents.length === 0) return;
+    // 4. For each participant, check if all their golfers finished a round
+    for (const p of participants) {
+      const teamGolfers = golfers.filter(g => g.participant_id === p.id);
+      if (teamGolfers.length === 0) continue;
 
-    // 4. Send push notifications
-    for (const ev of newEvents) {
-      const norm = normalizeName(ev.name);
+      const subs = subscriptions.filter(s => s.participant_id === p.id);
+      if (subs.length === 0) continue;
 
-      // Find subscriptions: team owners of this golfer + anyone who favorited this player
-      const teamOwners = golferMap[norm] || [];
-      const targetParticipantIds = new Set(teamOwners.map(t => t.participant_id));
+      for (let round = 1; round <= 4; round++) {
+        const kvKey = `summary_${p.id}_r${round}`;
 
-      // Also check favorites
-      for (const sub of subscriptions) {
-        const favs = sub.favorites || [];
-        if (favs.some(f => normalizeName(f) === norm)) {
-          targetParticipantIds.add(sub.participant_id);
+        // Already sent?
+        const sent = await env.KV.get(kvKey);
+        if (sent) continue;
+
+        // Check if ALL golfers finished this round
+        let allFinished = true;
+        const golferScores = [];
+
+        for (const g of teamGolfers) {
+          const espn = espnMap[normalizeName(g.name)];
+          if (!espn) { allFinished = false; break; }
+
+          const linescores = espn.linescores || [];
+          const roundData = linescores[round - 1];
+          if (!roundData) { allFinished = false; break; }
+
+          const holes = roundData.linescores || [];
+          if (holes.length < 18) { allFinished = false; break; }
+
+          const roundStrokes = holes.reduce((sum, h) => sum + (h.value || 0), 0);
+          const toPar = roundStrokes - 72;
+          const shortName = g.name.split(' ').pop();
+
+          golferScores.push({ shortName, toPar, roundStrokes });
         }
-      }
 
-      const targetSubs = subscriptions.filter(s => targetParticipantIds.has(s.participant_id));
+        if (!allFinished) continue;
 
-      const shortName = ev.name.split(' ').length > 1
-        ? ev.name.split(' ').slice(1).join(' ') + ' ' + ev.name.split(' ')[0][0] + '.'
-        : ev.name;
+        // Calculate team total for this round (best 4 of 5 for R1-R2, best 3 of 5 for R3-R4)
+        const countNeeded = round <= 2 ? 4 : 3;
+        const sorted = [...golferScores].sort((a, b) => a.toPar - b.toPar);
+        const counting = sorted.slice(0, countNeeded);
+        const teamToPar = counting.reduce((sum, g) => sum + g.toPar, 0);
+        const teamStr = teamToPar === 0 ? 'E' : (teamToPar > 0 ? `+${teamToPar}` : `${teamToPar}`);
 
-      const title = `${ev.emoji} ${shortName}`;
-      const body = ev.isRoundFinish
-        ? ev.label
-        : `${ev.label} auf Loch ${ev.hole} (R${ev.round})`;
+        // Build notification
+        const scoreLines = golferScores.map(g => {
+          const s = g.toPar === 0 ? 'E' : (g.toPar > 0 ? `+${g.toPar}` : `${g.toPar}`);
+          return `${g.shortName} ${s}`;
+        }).join(' · ');
 
-      for (const sub of targetSubs) {
-        try {
-          await sendWebPush(env, sub, { title, body });
-        } catch (e) {
-          console.error('Push failed for', sub.endpoint, e);
-          // If endpoint is gone (410), delete subscription
-          if (e.status === 410 || e.status === 404) {
-            await supabaseDelete(env, 'masters_push_subscriptions', sub.endpoint);
+        const title = `🏁 Runde ${round} fertig — Team ${teamStr}`;
+        const body = scoreLines;
+
+        // Mark as sent
+        await env.KV.put(kvKey, '1', { expirationTtl: 86400 * 7 });
+
+        // Send to all subscriptions of this participant
+        for (const sub of subs) {
+          try {
+            await sendWebPush(env, sub, { title, body });
+          } catch (e) {
+            console.error('Push failed for', sub.endpoint, e);
+            if (e.status === 410 || e.status === 404) {
+              await supabaseDelete(env, 'masters_push_subscriptions', sub.endpoint);
+            }
           }
         }
       }
@@ -170,43 +133,31 @@ async function sendWebPush(env, sub, payload) {
   const payloadText = JSON.stringify(payload);
   const payloadBytes = new TextEncoder().encode(payloadText);
 
-  // Generate local ECDH key pair
   const localKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
   const localPublicKey = await crypto.subtle.exportKey('raw', localKeyPair.publicKey);
 
-  // Import subscriber's public key
   const subscriberPublicKeyBytes = base64UrlDecode(p256dh);
   const subscriberPublicKey = await crypto.subtle.importKey('raw', subscriberPublicKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
 
-  // ECDH shared secret
   const sharedSecret = await crypto.subtle.deriveBits({ name: 'ECDH', public: subscriberPublicKey }, localKeyPair.privateKey, 256);
 
-  // Auth secret
   const authBytes = base64UrlDecode(auth);
-
-  // HKDF for IKM
   const ikm = await hkdf(authBytes, sharedSecret, concatBuffers(new TextEncoder().encode('WebPush: info\0'), subscriberPublicKeyBytes, new Uint8Array(localPublicKey)), 32);
 
-  // Salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
-
-  // HKDF for CEK and nonce
   const prk = await hkdf(salt, ikm, new TextEncoder().encode('Content-Encoding: aes128gcm\0'), 16);
   const nonce = await hkdf(salt, ikm, new TextEncoder().encode('Content-Encoding: nonce\0'), 12);
 
-  // Encrypt with AES-128-GCM
   const aesKey = await crypto.subtle.importKey('raw', prk, { name: 'AES-GCM' }, false, ['encrypt']);
   const paddedPayload = concatBuffers(new Uint8Array([0, 0]), payloadBytes);
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, tagLength: 128 }, aesKey, paddedPayload);
 
-  // Build body: salt(16) + rs(4) + idlen(1) + keyid(65) + encrypted
   const rs = new Uint8Array(4);
   new DataView(rs.buffer).setUint32(0, 4096);
   const keyId = new Uint8Array(localPublicKey);
   const idLen = new Uint8Array([65]);
   const body = concatBuffers(salt, rs, idLen, keyId, new Uint8Array(encrypted));
 
-  // VAPID JWT
   const jwt = await createVapidJwt(endpoint, vapidSubject, vapidPrivate, vapidPublic);
 
   const response = await fetch(endpoint, {

@@ -3666,50 +3666,11 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
-function togglePushDropdown() {
-  const dd = document.getElementById('pushDropdown');
-  if (dd.classList.contains('open')) { dd.classList.remove('open'); return; }
-
-  const myTeam = S.pushEnabled ? 'checked' : '';
-  const myFavs = S.pushFavs ? 'checked' : '';
-
-  dd.innerHTML = `
-    <div style="padding:12px 16px;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;border-bottom:1px solid var(--border)">Benachrichtigungen</div>
-    <label class="id-option" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="event.stopPropagation()">
-      <input type="checkbox" ${myTeam} onchange="togglePushOption('team', this.checked)" style="width:18px;height:18px;accent-color:var(--green)">
-      <div><div style="font-weight:600;font-size:13px">Meine Spieler</div><div style="font-size:11px;color:var(--text3)">Eagles & Doppel-Bogeys</div></div>
-    </label>
-    <label class="id-option" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="event.stopPropagation()">
-      <input type="checkbox" ${myFavs} onchange="togglePushOption('favs', this.checked)" style="width:18px;height:18px;accent-color:var(--green)">
-      <div><div style="font-weight:600;font-size:13px">Favoriten</div><div style="font-size:11px;color:var(--text3)">Deine markierten Golfer</div></div>
-    </label>`;
-  dd.classList.add('open');
-  setTimeout(() => document.addEventListener('click', e => {
-    if (!e.target.closest('#pushDropdown') && !e.target.closest('#btnPush')) dd.classList.remove('open');
-  }, { once: true }), 10);
-}
-
-async function togglePushOption(type, enabled) {
-  if (type === 'team') {
-    if (enabled && !S.pushEnabled) {
-      await subscribePush();
-    } else if (!enabled && S.pushEnabled) {
-      await unsubscribePush();
-    }
-  } else if (type === 'favs') {
-    S.pushFavs = enabled;
-    localStorage.setItem('masters_pool_push_favs', enabled ? 'true' : '');
-    // Update favorites in subscription
-    if (S.pushEnabled) {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        const favList = enabled ? [...(S.favorites || [])] : [];
-        await sb.from('masters_push_subscriptions')
-          .update({ favorites: favList })
-          .eq('endpoint', sub.endpoint);
-      }
-    }
+async function togglePushDropdown() {
+  if (S.pushEnabled) {
+    await unsubscribePush();
+  } else {
+    await subscribePush();
   }
   updatePushUI();
 }
@@ -3719,7 +3680,7 @@ function updatePushUI() {
   if (!btn) return;
   const show = S.myName && ('PushManager' in window);
   btn.style.display = show ? '' : 'none';
-  btn.classList.toggle('active', S.pushEnabled || S.pushFavs);
+  btn.classList.toggle('active', S.pushEnabled);
 }
 
 // Check if old push subscription is stale (VAPID key changed) and show re-subscribe banner
