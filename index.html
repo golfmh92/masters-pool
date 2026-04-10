@@ -2317,11 +2317,15 @@ function renderLeaderboard() {
 
   list.innerHTML = filteredRanking.map(renderLbEntry).join('');
 
-  // Restore open state after re-render
-  openEntries.forEach(id => {
-    const el = list.querySelector(`[data-id="${id}"]`);
-    if (el) el.classList.add('open');
-  });
+  // Restore open state after re-render, auto-open all during search
+  if (lbFilterVal) {
+    list.querySelectorAll('.lb-entry[data-id]').forEach(el => el.classList.add('open'));
+  } else {
+    openEntries.forEach(id => {
+      const el = list.querySelector(`[data-id="${id}"]`);
+      if (el) el.classList.add('open');
+    });
+  }
 
   // FLIP animation: animate from old to new position
   if (Object.keys(oldPositions).length > 0) {
