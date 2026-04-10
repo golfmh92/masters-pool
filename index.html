@@ -2587,20 +2587,23 @@ function renderTournament() {
     return { name, data, team: team ? team.name : null, debut: fieldEntry?.debut };
   });
 
-  // Sort: started players by toPar, then not-yet-started by tee time, then cut, then WD
+  // Sort: by score when scores exist, by tee time only before R1
+  const anyScores = allPlayers.some(p => p.data.r1 || (p.data.currentRound > 0 && !p.data.finished));
   allPlayers.sort((a, b) => {
     const aOut = a.data.status === 'wd' ? 2 : a.data.status === 'cut' ? 1 : 0;
     const bOut = b.data.status === 'wd' ? 2 : b.data.status === 'cut' ? 1 : 0;
     if (aOut !== bOut) return aOut - bOut;
-    // Not-started players (pre) sort after all started players
-    const aPre = a.data.statusState === 'pre' ? 1 : 0;
-    const bPre = b.data.statusState === 'pre' ? 1 : 0;
-    if (aPre !== bPre) return aPre - bPre;
-    // Both started: sort by toPar
-    if (!aPre && !bPre) {
-      if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
+    if (anyScores) {
+      // Has any score (finished or mid-round) → sort before truly not-started
+      const aHasScore = a.data.r1 || (a.data.currentRound > 0 && !a.data.finished);
+      const bHasScore = b.data.r1 || (b.data.currentRound > 0 && !b.data.finished);
+      if (aHasScore !== bHasScore) return aHasScore ? -1 : 1;
+      // Both have scores: sort by toPar
+      if (aHasScore && bHasScore) {
+        if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
+      }
     }
-    // Both not started or same toPar: sort by tee time (earlier first)
+    // Fallback: sort by tee time
     const aT = a.data.teeTime || '';
     const bT = b.data.teeTime || '';
     return aT < bT ? -1 : aT > bT ? 1 : 0;
@@ -2687,10 +2690,13 @@ function renderTournament() {
       return `<span style="color:${rel < 0 ? '#E63946' : rel === 0 ? '#2563EB' : '#000'};font-weight:500">${sc}</span>`;
     });
 
-    // Right column: tee time if not started, otherwise toPar
-    const rightCol = notStarted && p.data.teeTime
-      ? `<div class="lb-teetime" style="font-size:13px">${fmtTeeTime(p.data.teeTime, p.data.startHole)}</div>`
-      : `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`;
+    // Right column: always show score if available, tee time only if no score yet
+    const hasAnyScore = p.data.r1 || (p.data.currentRound > 0 && !p.data.finished);
+    const rightCol = hasAnyScore
+      ? `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`
+      : (notStarted && p.data.teeTime
+        ? `<div class="lb-teetime" style="font-size:13px">${fmtTeeTime(p.data.teeTime, p.data.startHole)}</div>`
+        : `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`);
 
     return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap;${mineStyle}" onclick="showScorecardByName('${esc(p.name)}')">
       ${favBtn}
@@ -2741,15 +2747,18 @@ function renderTournament() {
       if (!showAll) {
         html += `<div style="text-align:center;padding:8px 0 4px"><span style="font-size:13px;color:var(--green);cursor:pointer;font-weight:500" onclick="S._showAllFavs=true;renderTournament()">Alle ${favPlayers.length} Favoriten zeigen</span></div>`;
       }
-      html += '<div class="fav-divider">Alle Spieler</div>';
+      // "Alle Spieler" divider with projected/actual cut on the right
+      const cutLabel = S.projectedCut !== null && !S.eventFinished
+        ? `<span style="font-size:11px;color:var(--text2)">Proj. Cut <strong>${fmtScore(S.projectedCut)}</strong></span>`
+        : '';
+      html += `<div class="fav-divider" style="display:flex;justify-content:space-between;align-items:center"><span>Alle Spieler</span>${cutLabel}</div>`;
+    } else {
+      // No favorites — show cut line as standalone divider
+      if (S.projectedCut !== null && !S.eventFinished) {
+        html += `<div class="fav-divider" style="display:flex;justify-content:flex-end;align-items:center"><span style="font-size:11px;color:var(--text2)">Proj. Cut <strong>${fmtScore(S.projectedCut)}</strong></span></div>`;
+      }
     }
     html += restPlayers.map(renderTournamentEntry).join('');
-  }
-
-  // Projected cut line
-  if (S.projectedCut !== null && !S.eventFinished) {
-    const cutHtml = `<div style="text-align:center;padding:6px 12px;margin-bottom:8px;font-size:12px;color:var(--text2);background:var(--bg2);border-radius:8px">Projected Cut: <strong>${fmtScore(S.projectedCut)}</strong></div>`;
-    html = cutHtml + html;
   }
 
   list.innerHTML = html;
@@ -2762,8 +2771,13 @@ function buildScorecardHeader(name, teamName, headshot, position) {
     : `<div class="scorecard-avatar-fallback">${initials}</div>`;
   const teamInfo = teamName ? `<div style="font-size:13px;color:var(--gold);font-weight:400;margin-top:1px">${esc(teamName)}</div>` : '';
   const posHtml = position ? `<div style="font-size:12px;color:var(--text3);margin-top:2px">Platz ${position}</div>` : '';
-  // Debut star
-  const fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(name));
+  // Debut star — check mastersField, also match via golfer's espnName
+  let fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(name));
+  if (!fieldEntry) {
+    // Try matching via drafted golfer's original name
+    const dg = S.golfers.find(g => g._espnName === name || normalizeName(g.name) === normalizeName(name));
+    if (dg) fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(dg.name)) || S.mastersField.find(f => normalizeName(f.name) === normalizeName(dg._espnName || ''));
+  }
   const debutStar = fieldEntry?.debut ? '<span style="color:var(--gold);font-size:14px;margin-left:4px">★</span>' : '';
   return `<div class="scorecard-header">${avatarHtml}<div class="scorecard-header-info"><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${esc(name)}${debutStar}</div>${teamInfo}${posHtml}</div></div>`;
 }
@@ -2896,45 +2910,6 @@ function renderScorecardContent(live) {
     html += '<div style="height:4px"></div>';
     html += buildNine(10, 18, 'IN', true, true);
 
-    // Per-golfer statistics
-    let birdies = 0, eagles = 0, pars = 0, bogeys = 0, dblPlus = 0, totalH = 0;
-    for (const r of activeRounds) {
-      const rh = live.holes['r' + r];
-      if (!rh) continue;
-      for (const h of rh) {
-        const pv = h.par === 'E' ? 0 : parseInt(h.par);
-        if (isNaN(pv)) {
-          // Fallback: calculate from Augusta pars
-          const ap = AUGUSTA_PARS[h.hole - 1];
-          if (ap && h.score) {
-            const diff = Math.round(h.score) - ap;
-            totalH++;
-            if (diff <= -2) eagles++;
-            else if (diff === -1) birdies++;
-            else if (diff === 0) pars++;
-            else if (diff === 1) bogeys++;
-            else dblPlus++;
-          }
-          continue;
-        }
-        totalH++;
-        if (pv <= -2) eagles++;
-        else if (pv === -1) birdies++;
-        else if (pv === 0) pars++;
-        else if (pv === 1) bogeys++;
-        else dblPlus++;
-      }
-    }
-    if (totalH > 0) {
-      const pct = v => Math.round(v / totalH * 100) + '%';
-      html += `<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center">
-        ${eagles > 0 ? `<div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#F4D03F">${eagles}</div><div style="color:var(--text3)">Eagle</div></div>` : ''}
-        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#E63946">${birdies}</div><div style="color:var(--text3)">Birdie</div></div>
-        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700">${pars}</div><div style="color:var(--text3)">Par</div></div>
-        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#2563EB">${bogeys}</div><div style="color:var(--text3)">Bogey</div></div>
-        ${dblPlus > 0 ? `<div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700">${dblPlus}</div><div style="color:var(--text3)">Dbl+</div></div>` : ''}
-      </div>`;
-    }
   }
 
   document.getElementById('scorecardContent').innerHTML = html;
