@@ -57,10 +57,11 @@ body::before{content:'';position:fixed;inset:0;background:
 .live-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-body);font-size:10px;font-weight:600;color:var(--gold);letter-spacing:1px;margin-top:2px;text-transform:uppercase}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse-live 1.5s ease-in-out infinite}
 @keyframes pulse-live{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes scoreBetter{0%{opacity:.3;transform:scale(.85)}40%{opacity:1;transform:scale(1.12)}100%{transform:scale(1)}}
-@keyframes scoreWorse{0%{opacity:.2}100%{opacity:1}}
-.score-better{animation:scoreBetter .5s cubic-bezier(.25,.8,.25,1)}
-.score-worse{animation:scoreWorse .6s ease-out}
+@keyframes scoreBetter{0%{opacity:0;transform:scale(.7)}30%{opacity:1;transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes scoreWorse{0%{opacity:0}100%{opacity:1}}
+.score-better,.score-worse{display:inline-block}
+.score-better{animation:scoreBetter .6s cubic-bezier(.25,.8,.25,1)}
+.score-worse{animation:scoreWorse .8s ease-out}
 .live-badge.stale{color:rgba(255,255,255,.4)}
 .live-badge.stale .live-dot{background:rgba(255,255,255,.4);animation:none}
 .header-admin{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);transition:all .2s}
@@ -1119,9 +1120,10 @@ function getRanking() {
 
 /* ===================== Formatting ===================== */
 function parseScoreText(txt) {
-  if (!txt || txt === '—') return null;
-  if (txt === 'E') return 0;
-  return parseInt(txt.replace('+', ''), 10);
+  const t = (txt || '').trim();
+  if (!t || t === '—') return null;
+  if (t === 'E') return 0;
+  return parseInt(t.replace('+', ''), 10);
 }
 
 function animateScoreEl(el, oldText) {
