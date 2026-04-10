@@ -2587,23 +2587,14 @@ function renderTournament() {
     return { name, data, team: team ? team.name : null, debut: fieldEntry?.debut };
   });
 
-  // Sort: by score when scores exist, by tee time only before R1
-  const anyScores = allPlayers.some(p => p.data.r1 || (p.data.currentRound > 0 && !p.data.finished));
+  // Sort: by toPar once any scores exist, by tee time before R1
   allPlayers.sort((a, b) => {
     const aOut = a.data.status === 'wd' ? 2 : a.data.status === 'cut' ? 1 : 0;
     const bOut = b.data.status === 'wd' ? 2 : b.data.status === 'cut' ? 1 : 0;
     if (aOut !== bOut) return aOut - bOut;
-    if (anyScores) {
-      // Has any score (finished or mid-round) → sort before truly not-started
-      const aHasScore = a.data.r1 || (a.data.currentRound > 0 && !a.data.finished);
-      const bHasScore = b.data.r1 || (b.data.currentRound > 0 && !b.data.finished);
-      if (aHasScore !== bHasScore) return aHasScore ? -1 : 1;
-      // Both have scores: sort by toPar
-      if (aHasScore && bHasScore) {
-        if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
-      }
-    }
-    // Fallback: sort by tee time
+    // Sort by toPar (lower is better)
+    if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
+    // Tiebreak: tee time
     const aT = a.data.teeTime || '';
     const bT = b.data.teeTime || '';
     return aT < bT ? -1 : aT > bT ? 1 : 0;
@@ -2747,15 +2738,16 @@ function renderTournament() {
       if (!showAll) {
         html += `<div style="text-align:center;padding:8px 0 4px"><span style="font-size:13px;color:var(--green);cursor:pointer;font-weight:500" onclick="S._showAllFavs=true;renderTournament()">Alle ${favPlayers.length} Favoriten zeigen</span></div>`;
       }
-      // "Alle Spieler" divider with projected/actual cut on the right
-      const cutLabel = S.projectedCut !== null && !S.eventFinished
-        ? `<span style="font-size:11px;color:var(--text2)">Proj. Cut <strong>${fmtScore(S.projectedCut)}</strong></span>`
-        : '';
-      html += `<div class="fav-divider" style="display:flex;justify-content:space-between;align-items:center"><span>Alle Spieler</span>${cutLabel}</div>`;
+      // "Alle Spieler [---line---] Proj. Cut +3"
+      if (S.projectedCut !== null && !S.eventFinished) {
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span>Alle Spieler</span><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
+      } else {
+        html += '<div class="fav-divider">Alle Spieler</div>';
+      }
     } else {
       // No favorites — show cut line as standalone divider
       if (S.projectedCut !== null && !S.eventFinished) {
-        html += `<div class="fav-divider" style="display:flex;justify-content:flex-end;align-items:center"><span style="font-size:11px;color:var(--text2)">Proj. Cut <strong>${fmtScore(S.projectedCut)}</strong></span></div>`;
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
       }
     }
     html += restPlayers.map(renderTournamentEntry).join('');
