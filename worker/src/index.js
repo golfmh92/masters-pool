@@ -6,10 +6,58 @@ export default {
     ctx.waitUntil(checkForEvents(env));
   },
   async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/debug') return debugCheck(env);
     await checkForEvents(env);
     return new Response('OK - checked for events');
   }
 };
+
+async function debugCheck(env) {
+  const resp = await fetch(env.ESPN_URL);
+  const json = await resp.json();
+  const events = json.events || [];
+  let tournament = events.find(e => e.name && (e.name.toLowerCase().includes('masters') || e.name.toLowerCase().includes('augusta')));
+  if (!tournament && events.length > 0) tournament = events[0];
+  const comp = tournament?.competitions?.[0];
+  const competitors = comp?.competitors || [];
+
+  const espnMap = {};
+  for (const c of competitors) {
+    const name = c.athlete?.displayName || c.athlete?.shortName || '';
+    if (!name) continue;
+    espnMap[normalizeName(name)] = { name, rounds: (c.linescores || []).map((ls, i) => ({ round: i + 1, holes: (ls.linescores || []).length })) };
+  }
+
+  const golfers = await supabaseGet(env, 'masters_golfers', 'id,name,participant_id');
+  const participants = await supabaseGet(env, 'masters_participants', 'id,name');
+  const subscriptions = await supabaseGet(env, 'masters_push_subscriptions', 'participant_id,endpoint');
+
+  const debug = { espnCount: competitors.length, golfers: golfers.length, subs: subscriptions.length, teams: [] };
+
+  for (const p of participants) {
+    const teamGolfers = golfers.filter(g => g.participant_id === p.id);
+    const hasSub = subscriptions.some(s => s.participant_id === p.id);
+    const team = { name: p.name, hasSub, golfers: [] };
+
+    for (const g of teamGolfers) {
+      const norm = normalizeName(g.name);
+      const espn = espnMap[norm];
+      team.golfers.push({ name: g.name, normalized: norm, espnMatch: espn ? espn.name : 'NOT FOUND', rounds: espn ? espn.rounds : [] });
+    }
+
+    // Check KV for sent summaries
+    team.kvKeys = {};
+    for (let r = 1; r <= 4; r++) {
+      const k = `summary_${p.id}_r${r}`;
+      team.kvKeys[`r${r}`] = await env.KV.get(k);
+    }
+
+    if (hasSub) debug.teams.push(team);
+  }
+
+  return new Response(JSON.stringify(debug, null, 2), { headers: { 'Content-Type': 'application/json' } });
+}
 
 async function checkForEvents(env) {
   try {
@@ -34,6 +82,7 @@ async function checkForEvents(env) {
     const participants = await supabaseGet(env, 'masters_participants', 'id,name');
     const subscriptions = await supabaseGet(env, 'masters_push_subscriptions', 'participant_id,endpoint,p256dh,auth');
 
+    console.log(`Data: ${golfers.length} golfers, ${participants.length} participants, ${subscriptions.length} subs, ${competitors.length} ESPN competitors`);
     if (!golfers.length || !subscriptions.length) return;
 
     // 3. Build ESPN lookup: normalized name → competitor data
@@ -57,6 +106,7 @@ async function checkForEvents(env) {
 
         // Already sent?
         const sent = await env.KV.get(kvKey);
+        console.log(`${p.name} R${round}: kvKey=${kvKey}, sent=${sent}`);
         if (sent) continue;
 
         // Check if ALL golfers finished this round
@@ -64,8 +114,9 @@ async function checkForEvents(env) {
         const golferScores = [];
 
         for (const g of teamGolfers) {
-          const espn = espnMap[normalizeName(g.name)];
-          if (!espn) { allFinished = false; break; }
+          const norm = normalizeName(g.name);
+          const espn = espnMap[norm];
+          if (!espn) { console.log(`  ${g.name} (${norm}): NOT FOUND in ESPN`); allFinished = false; break; }
 
           const linescores = espn.linescores || [];
           const roundData = linescores[round - 1];
@@ -81,6 +132,7 @@ async function checkForEvents(env) {
           golferScores.push({ shortName, toPar, roundStrokes });
         }
 
+        console.log(`${p.name} R${round}: allFinished=${allFinished}, golferScores=${golferScores.length}`);
         if (!allFinished) continue;
 
         // Calculate team total for this round (best 4 of 5 for R1-R2, best 3 of 5 for R3-R4)
@@ -99,6 +151,7 @@ async function checkForEvents(env) {
         const title = `🏁 Runde ${round} fertig — Team ${teamStr}`;
         const body = scoreLines;
 
+        console.log(`SENDING to ${p.name}: ${title} | ${body}`);
         // Mark as sent
         await env.KV.put(kvKey, '1', { expirationTtl: 86400 * 7 });
 
