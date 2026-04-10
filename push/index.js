@@ -28,7 +28,7 @@ async function loadSeen() {
 async function markSeen(eventIds) {
   if (eventIds.length === 0) return;
   const body = eventIds.map(id => ({ event_id: id }));
-  await fetch(`${SUPABASE_URL}/rest/v1/masters_push_seen`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/masters_push_seen`, {
     method: 'POST',
     headers: {
       apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -36,6 +36,11 @@ async function markSeen(eventIds) {
     },
     body: JSON.stringify(body)
   });
+  if (!res.ok) {
+    console.error(`markSeen FAILED (${res.status}):`, await res.text());
+  } else {
+    console.log(`markSeen: ${eventIds.length} events saved`);
+  }
 }
 
 // --- Supabase helpers ---
@@ -164,12 +169,13 @@ async function main() {
 
   console.log(`${newEvents.length} new events found`);
 
-  // 5. Send push notifications
-  let sent = 0, failed = 0;
+  // 5. Group events by participant → send ONE batched notification per person
+  const participantEvents = {}; // participant_id → [events]
+
   for (const ev of newEvents) {
     const norm = normalizeName(ev.name);
 
-    // Find target subscriptions: team owners + favorites
+    // Find target participant IDs: team owners + favorites
     const teamOwners = golferMap[norm] || [];
     const targetIds = new Set(teamOwners.map(t => t.participant_id));
 
@@ -180,10 +186,34 @@ async function main() {
       }
     }
 
-    const targetSubs = subscriptions.filter(s => targetIds.has(s.participant_id));
-    const sn = shortName(ev.name);
-    const title = `${ev.emoji} ${sn}`;
-    const body = ev.isRoundFinish ? ev.label : `${ev.label} auf Loch ${ev.hole} (R${ev.round})`;
+    for (const pid of targetIds) {
+      if (!participantEvents[pid]) participantEvents[pid] = [];
+      participantEvents[pid].push(ev);
+    }
+  }
+
+  // Send one notification per participant with all events combined
+  let sent = 0, failed = 0;
+  for (const [pid, evts] of Object.entries(participantEvents)) {
+    const targetSubs = subscriptions.filter(s => s.participant_id === pid);
+    if (!targetSubs.length) continue;
+
+    let title, body;
+    if (evts.length === 1) {
+      // Single event — keep original format
+      const ev = evts[0];
+      const sn = shortName(ev.name);
+      title = `${ev.emoji} ${sn}`;
+      body = ev.isRoundFinish ? ev.label : `${ev.label} auf Loch ${ev.hole} (R${ev.round})`;
+    } else {
+      // Multiple events — batch into one notification
+      title = `⛳ ${evts.length} Updates`;
+      body = evts.map(ev => {
+        const sn = shortName(ev.name);
+        if (ev.isRoundFinish) return `${ev.emoji} ${sn} ${ev.label}`;
+        return `${ev.emoji} ${sn}: ${ev.label} Loch ${ev.hole}`;
+      }).join('\n');
+    }
 
     for (const sub of targetSubs) {
       try {
@@ -192,10 +222,10 @@ async function main() {
           JSON.stringify({ title, body })
         );
         sent++;
-        console.log(`  ✓ ${title} → ${sub.participant_id}`);
+        console.log(`  ✓ [${evts.length} events] → ${pid}`);
       } catch (e) {
         failed++;
-        console.error(`  ✗ ${title} → ${sub.participant_id}: ${e.statusCode || e.message}`);
+        console.error(`  ✗ → ${pid}: ${e.statusCode || e.message}`);
         if (e.statusCode === 410 || e.statusCode === 404) {
           await supabaseDelete('masters_push_subscriptions', sub.endpoint);
           console.log(`    Removed stale subscription`);
