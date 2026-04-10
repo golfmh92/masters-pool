@@ -2215,7 +2215,7 @@ function renderLeaderboard() {
           const rounds = [1,2,3,4].map(r => {
             const sc = getGolferScore(g.id, r);
             const rel = sc !== null ? sc - PAR : null;
-            const sCls = scoreClass(rel);
+            const sCls = scoreClass(rel) === 'dbl' ? 'bogey' : scoreClass(rel);
             const counting = countingMap[g.id + '_' + r];
             // Tee time in the current round cell only (not Σ)
             if (g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.nextRound === r && g._live.roundTeeTimes && g._live.roundTeeTimes[r - 1]) {
@@ -2254,7 +2254,7 @@ function renderLeaderboard() {
           const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
           const sc = getGolferScore(g.id, rd);
           const rel = sc !== null ? sc - PAR : null;
-          const sCls = scoreClass(rel);
+          const sCls = scoreClass(rel) === 'dbl' ? 'bogey' : scoreClass(rel);
           const counting = countingMap[g.id + '_' + rd];
           const thru = (g._live && g._live.thru && !isCut) ? g._live.thru : '';
           // Show tee time if player hasn't started, or toPar + thru if mid-round
