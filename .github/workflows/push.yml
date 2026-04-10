@@ -1,0 +1,27 @@
+name: Push Notifications
+
+on:
+  schedule:
+    - cron: '*/2 * * * *'  # Every 2 minutes
+  workflow_dispatch: {}     # Manual trigger
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: push
+        run: npm ci
+      - name: Check for events and send push
+        working-directory: push
+        env:
+          SUPABASE_URL: https://wmqmufxyovfhxorzvrzn.supabase.co
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: mailto:habeler.markus@gmail.com
+        run: node index.js

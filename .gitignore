@@ -1,2 +1,4 @@
 .firecrawl/
 dist/
+push/node_modules/
+push/.seen.json

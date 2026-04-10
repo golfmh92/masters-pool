@@ -3512,7 +3512,7 @@ function startLiveRefresh() {
 
 
 /* ===================== Push Notifications ===================== */
-const VAPID_PUBLIC = 'BI69ibPpigizZExp4HprtpKc2KN5Hm3EufVvZovroOcFyebHXLnT7anSwj74HZUiw8C87PhrJpe9l-mbY28eJA4';
+const VAPID_PUBLIC = 'BATHtXsudbJdH5BAgQKW0eZglqK3OVDMJ6YNNktat5k8CNS1tOb-AME-UL_W8apqv_V0ClK1y6o_fud75IRomjw';
 
 async function initServiceWorker() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -3637,6 +3637,44 @@ function updatePushUI() {
   const show = S.myName && ('PushManager' in window);
   btn.style.display = show ? '' : 'none';
   btn.classList.toggle('active', S.pushEnabled || S.pushFavs);
+}
+
+// Check if old push subscription is stale (VAPID key changed) and show re-subscribe banner
+async function checkPushResubscribe() {
+  if (!S.myName || !('PushManager' in window) || !('serviceWorker' in navigator)) return;
+  const hadPush = localStorage.getItem('masters_pool_push') === 'true';
+  if (!hadPush) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      // Check if this subscription still exists in Supabase
+      const { data } = await sb.from('masters_push_subscriptions').select('endpoint').eq('endpoint', sub.endpoint).maybeSingle();
+      if (data) return; // still valid
+    }
+    // Subscription is gone or doesn't match — show banner
+    localStorage.removeItem('masters_pool_push');
+    S.pushEnabled = false;
+    showPushBanner();
+  } catch(e) { console.warn('Push resubscribe check failed:', e); }
+}
+
+function showPushBanner() {
+  // Don't show if already dismissed
+  if (localStorage.getItem('masters_push_banner_dismissed')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pushBanner';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:12px;right:12px;z-index:9999;background:var(--green);color:#fff;border-radius:12px;padding:14px 16px;font-family:var(--font-body);font-size:13px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  banner.innerHTML = `
+    <div style="flex:1">
+      <div style="font-weight:600;margin-bottom:2px">Push Notifications neu aktivieren</div>
+      <div style="font-size:11px;opacity:.8">Bitte einmal neu aktivieren (Glocke oben rechts)</div>
+    </div>
+    <div style="cursor:pointer;font-size:18px;opacity:.7;padding:4px" onclick="this.parentElement.remove();localStorage.setItem('masters_push_banner_dismissed','1')">✕</div>
+  `;
+  document.body.appendChild(banner);
+  // Auto-remove after 15 seconds
+  setTimeout(() => { if (document.getElementById('pushBanner')) banner.remove(); }, 15000);
 }
 
 /* ===================== Onboarding ===================== */
@@ -3792,6 +3830,7 @@ init().then(() => {
   initServiceWorker();
   S.pushEnabled = localStorage.getItem('masters_pool_push') === 'true';
   S.pushFavs = localStorage.getItem('masters_pool_push_favs') === 'true';
+  setTimeout(checkPushResubscribe, 3000); // check after 3s
 
   // Onboarding
   if (!isRunningStandalone() && !hasSeenPWAPrompt()) {
