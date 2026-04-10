@@ -2,12 +2,7 @@
 // Polls ESPN, detects eagles/double bogeys/round finishes, sends web push via web-push library
 
 import webpush from 'web-push';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SEEN_FILE = join(__dirname, '.seen.json');
 const ESPN_URL = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const PAR = 72;
 
@@ -23,15 +18,24 @@ if (!SUPABASE_URL || !SUPABASE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-// --- State: track seen events ---
-function loadSeen() {
-  if (existsSync(SEEN_FILE)) {
-    try { return JSON.parse(readFileSync(SEEN_FILE, 'utf8')); } catch { return {}; }
-  }
-  return {};
+// --- State: track seen events in Supabase ---
+async function loadSeen() {
+  const rows = await supabaseGet('masters_push_seen', 'event_id');
+  const seen = {};
+  for (const r of rows) seen[r.event_id] = true;
+  return seen;
 }
-function saveSeen(seen) {
-  writeFileSync(SEEN_FILE, JSON.stringify(seen));
+async function markSeen(eventIds) {
+  if (eventIds.length === 0) return;
+  const body = eventIds.map(id => ({ event_id: id }));
+  await fetch(`${SUPABASE_URL}/rest/v1/masters_push_seen`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates'
+    },
+    body: JSON.stringify(body)
+  });
 }
 
 // --- Supabase helpers ---
@@ -95,8 +99,8 @@ async function main() {
     golferMap[norm].push({ participant_id: g.participant_id, participantName: p?.name || '' });
   }
 
-  // 3. Load seen events
-  const seen = loadSeen();
+  // 3. Load seen events from Supabase
+  const seen = await loadSeen();
 
   // 4. Scan for events
   const newEvents = [];
@@ -119,7 +123,7 @@ async function main() {
 
         const eventId = `${name}_r${r + 1}_h${h.period}`;
         if (seen[eventId]) continue;
-        seen[eventId] = Date.now();
+        seen[eventId] = true;
 
         let emoji, label;
         if (pv <= -3) { emoji = '🌟'; label = 'Albatross'; }
@@ -135,7 +139,7 @@ async function main() {
       if (roundHoles.length >= 18) {
         const finishId = `${name}_r${r + 1}_finished`;
         if (!seen[finishId]) {
-          seen[finishId] = Date.now();
+          seen[finishId] = true;
           const roundScore = roundHoles.reduce((sum, h) => sum + (h.value || 0), 0);
           const toPar = roundScore - PAR;
           const toParStr = toPar === 0 ? 'Even Par' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
@@ -149,8 +153,9 @@ async function main() {
     }
   }
 
-  // Save seen state
-  saveSeen(seen);
+  // Save new seen events to Supabase
+  const newSeenIds = newEvents.map(e => e.eventId);
+  await markSeen(newSeenIds);
 
   if (newEvents.length === 0) {
     console.log('No new events');

@@ -3533,6 +3533,11 @@ async function subscribePush() {
   }
   try {
     const reg = await navigator.serviceWorker.ready;
+    // Unsubscribe old subscription if VAPID key changed
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) {
+      try { await oldSub.unsubscribe(); } catch(e) { console.warn('Old unsubscribe failed:', e); }
+    }
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
