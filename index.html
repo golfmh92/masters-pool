@@ -413,7 +413,7 @@ body::before{content:'';position:fixed;inset:0;background:
     <div class="view active" id="viewLeaderboard">
       <div id="meineGolferSection"></div>
       <div style="position:relative;margin-bottom:12px">
-        <input class="input" type="text" id="lbFilter" placeholder="Mitspieler suchen..." oninput="renderLeaderboard()" style="width:100%;display:block;padding-right:36px">
+        <input class="input" type="text" id="lbFilter" placeholder="Mitspieler oder Golfer suchen..." oninput="renderLeaderboard()" style="width:100%;display:block;padding-right:36px">
         <div id="lbFilterClear" onclick="document.getElementById('lbFilter').value='';document.getElementById('lbFilter').blur();renderLeaderboard()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;align-items:center;justify-content:center">×</div>
       </div>
       <div class="round-tabs" id="lbRoundTabs"></div>
@@ -2101,7 +2101,11 @@ function renderLeaderboard() {
   const lbFilterVal = normalizeName(lbFilterEl?.value || '');
   const lbClear = document.getElementById('lbFilterClear');
   if (lbClear) lbClear.style.display = lbFilterEl?.value?.trim() ? 'flex' : 'none';
-  const filteredRanking = lbFilterVal ? ranking.filter(t => normalizeName(t.name).includes(lbFilterVal)) : ranking;
+  const filteredRanking = lbFilterVal ? ranking.filter(t => {
+    if (normalizeName(t.name).includes(lbFilterVal)) return true;
+    const teamGolfers = S.golfers.filter(g => g.participant_id === t.id);
+    return teamGolfers.some(g => normalizeName(g.name).includes(lbFilterVal));
+  }) : ranking;
 
   // Round tabs
   const days = ['Gesamt','Do','Fr','Sa','So'];
