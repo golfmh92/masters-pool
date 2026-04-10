@@ -2041,7 +2041,7 @@ function renderMeineGolfer() {
         <div class="mg-name">${esc(shortName(g.name))}</div>
         ${g._live && !g._live.outStatus && !S.eventFinished && g._live.statusState === 'pre' && g._live.teeTime
           ? `<div class="lb-teetime">${fmtTeeTime(g._live.teeTime, g._live.startHole)}</div>`
-          : `<div class="mg-score ${scoreCls}">${g._live?.r1 ? g._live.r1 + ' (' + fmtScore(toPar) + ')' : fmtScore(toPar)}</div>`}
+          : `<div class="mg-score ${scoreCls}">${fmtScore(toPar)}</div>`}
         ${isCut ? `<div class="mg-cut">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</div>` : (thru && thru !== '0' && thru !== 'F' ? `<div class="mg-thru">${thru}</div>` : '')}
       </div>
     </div>`;
