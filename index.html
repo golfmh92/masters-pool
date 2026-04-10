@@ -3277,11 +3277,9 @@ async function fetchLiveScores() {
       else if (stName === 'wd' || stName === 'status_wd' || stDesc.includes('withdraw')) outStatus = 'wd';
       else if (stName === 'dq' || stName === 'status_dq' || stDesc.includes('disqual')) outStatus = 'dq';
 
-      // Detect missed cut (fallback): ESPN status or old linescore heuristic
-      const maxRounds = linescores.length;
-      const completedRounds = Object.keys(roundScores).filter(k => !k.includes('toPar')).length;
-      const isCut = outStatus === 'cut' ||
-                    (maxRounds <= 2 && completedRounds >= 2 && currentRound === 0 && finished);
+      // Detect missed cut: only trust ESPN outStatus, not heuristics
+      // The linescore heuristic (maxRounds<=2 && finished) fires too early while R2 is still in progress
+      const isCut = outStatus === 'cut';
 
       // Tee times from status + per-round linescores
       const teeTime = status.teeTime || null;
