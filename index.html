@@ -2750,7 +2750,19 @@ function renderTournament() {
         html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
       }
     }
-    html += restPlayers.map(renderTournamentEntry).join('');
+    // Insert cut line between players at the projected cut score
+    const cutLine = S.projectedCut !== null && !S.eventFinished
+      ? `<div style="display:flex;align-items:center;gap:8px;padding:4px 4px;margin:4px 0"><span style="flex:1;height:2px;background:var(--red);opacity:.4"></span><span style="font-size:10px;color:var(--red);font-weight:600;letter-spacing:.5px;white-space:nowrap">PROJECTED CUT</span><span style="flex:1;height:2px;background:var(--red);opacity:.4"></span></div>`
+      : null;
+    let cutInserted = false;
+    html += restPlayers.map(p => {
+      let prefix = '';
+      if (cutLine && !cutInserted && p.data.toPar > S.projectedCut && p.data.status !== 'cut' && p.data.status !== 'wd') {
+        prefix = cutLine;
+        cutInserted = true;
+      }
+      return prefix + renderTournamentEntry(p);
+    }).join('');
   }
 
   list.innerHTML = html;
