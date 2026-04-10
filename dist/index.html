@@ -2938,14 +2938,15 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 // Swipe-down to dismiss modals
 document.querySelectorAll('.modal').forEach(modal => {
-  let startY = 0, currentY = 0, swiping = false;
+  let startY = 0, currentY = 0, swiping = false, didSwipe = false;
   modal.addEventListener('touchstart', e => {
-    if (modal.scrollTop <= 0) { startY = e.touches[0].clientY; swiping = true; }
+    if (modal.scrollTop <= 0) { startY = e.touches[0].clientY; swiping = true; didSwipe = false; }
   }, { passive: true });
   modal.addEventListener('touchmove', e => {
     if (!swiping) return;
     currentY = e.touches[0].clientY;
     const dy = currentY - startY;
+    if (dy > 5) didSwipe = true;
     if (dy > 0) modal.style.transform = `translateY(${dy}px)`;
   }, { passive: true });
   modal.addEventListener('touchend', () => {
@@ -2954,6 +2955,9 @@ document.querySelectorAll('.modal').forEach(modal => {
     swiping = false;
     if (dy > 80) {
       modal.closest('.modal-overlay').classList.remove('open');
+      // Block clicks briefly so swipe-dismiss doesn't trigger elements underneath
+      document.body.style.pointerEvents = 'none';
+      setTimeout(() => { document.body.style.pointerEvents = ''; }, 300);
     }
     modal.style.transform = '';
     currentY = 0;
