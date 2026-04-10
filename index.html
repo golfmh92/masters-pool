@@ -1013,21 +1013,25 @@ function calcTeamTotal(participantId) {
 
 // Returns 'active', 'cut', 'wd', or 'dq'
 function golferStatus(g) {
-  if (!g.made_cut) {
-    const dqMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
-    if (dqMarker) return 'dq';
-    const wdMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -2);
-    if (wdMarker) return 'wd';
-    const hasScores = S.scores.some(s => s.golfer_id === g.id && s.score > 0);
-    const hasLiveScores = g._live && (g._live.r1 || g._live.r2);
-    return (hasScores || hasLiveScores) ? 'cut' : 'wd';
-  }
-  // 2. ESPN live status
+  // 1. Check Supabase score markers (manual DQ/WD)
+  const dqMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
+  if (dqMarker) return 'dq';
+  const wdMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -2);
+  if (wdMarker) return 'wd';
+
+  // 2. ESPN live status — only trust ESPN for cut/wd/dq
   if (g._live) {
     if (g._live.outStatus === 'dq') return 'dq';
     if (g._live.outStatus === 'wd') return 'wd';
     if (g._live.outStatus === 'cut' || g._live.status === 'cut') return 'cut';
   }
+
+  // 3. Supabase made_cut=false only counts after event is finished (no live data)
+  if (!g._live && !g.made_cut) {
+    const hasScores = S.scores.some(s => s.golfer_id === g.id && s.score > 0);
+    if (hasScores) return 'cut';
+  }
+
   return 'active';
 }
 

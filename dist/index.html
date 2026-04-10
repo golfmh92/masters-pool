@@ -1013,21 +1013,25 @@ function calcTeamTotal(participantId) {
 
 // Returns 'active', 'cut', 'wd', or 'dq'
 function golferStatus(g) {
-  if (!g.made_cut) {
-    const dqMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
-    if (dqMarker) return 'dq';
-    const wdMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -2);
-    if (wdMarker) return 'wd';
-    const hasScores = S.scores.some(s => s.golfer_id === g.id && s.score > 0);
-    const hasLiveScores = g._live && (g._live.r1 || g._live.r2);
-    return (hasScores || hasLiveScores) ? 'cut' : 'wd';
-  }
-  // 2. ESPN live status
+  // 1. Check Supabase score markers (manual DQ/WD)
+  const dqMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -1);
+  if (dqMarker) return 'dq';
+  const wdMarker = S.scores.some(s => s.golfer_id === g.id && s.score === -2);
+  if (wdMarker) return 'wd';
+
+  // 2. ESPN live status — only trust ESPN for cut/wd/dq
   if (g._live) {
     if (g._live.outStatus === 'dq') return 'dq';
     if (g._live.outStatus === 'wd') return 'wd';
     if (g._live.outStatus === 'cut' || g._live.status === 'cut') return 'cut';
   }
+
+  // 3. Supabase made_cut=false only counts after event is finished (no live data)
+  if (!g._live && !g.made_cut) {
+    const hasScores = S.scores.some(s => s.golfer_id === g.id && s.score > 0);
+    if (hasScores) return 'cut';
+  }
+
   return 'active';
 }
 
@@ -2157,24 +2161,16 @@ function renderLeaderboard() {
         withScores.slice(0, count).forEach(x => { countingMap[x.id + '_' + r] = true; });
       }
 
-      // Sort golfers: started by toPar (best first), then not-started by tee time, cut/wd last
+      // Sort golfers: by toPar (best first), cut/wd/dq last
       const sortedTeamGolfers = [...teamGolfers].sort((a, b) => {
         const aS = golferStatus(a);
         const bS = golferStatus(b);
         const aOut = aS === 'dq' ? 3 : aS === 'wd' ? 2 : aS === 'cut' ? 1 : 0;
         const bOut = bS === 'dq' ? 3 : bS === 'wd' ? 2 : bS === 'cut' ? 1 : 0;
         if (aOut !== bOut) return aOut - bOut;
-        // Started players before not-started
-        const aPre = a._live && a._live.statusState === 'pre' ? 1 : 0;
-        const bPre = b._live && b._live.statusState === 'pre' ? 1 : 0;
-        if (aPre !== bPre) return aPre - bPre;
-        // Both started: sort by toPar
-        if (!aPre && !bPre) {
-          const aTP = a._live ? a._live.toPar : 999;
-          const bTP = b._live ? b._live.toPar : 999;
-          if (aTP !== bTP) return aTP - bTP;
-        }
-        // Both not started: sort by tee time
+        const aTP = a._live ? a._live.toPar : 999;
+        const bTP = b._live ? b._live.toPar : 999;
+        if (aTP !== bTP) return aTP - bTP;
         const aT = a._live?.teeTime || '';
         const bT = b._live?.teeTime || '';
         return aT < bT ? -1 : aT > bT ? 1 : 0;
@@ -2587,20 +2583,14 @@ function renderTournament() {
     return { name, data, team: team ? team.name : null, debut: fieldEntry?.debut };
   });
 
-  // Sort: started players by toPar, then not-yet-started by tee time, then cut, then WD
+  // Sort: by toPar once any scores exist, by tee time before R1
   allPlayers.sort((a, b) => {
     const aOut = a.data.status === 'wd' ? 2 : a.data.status === 'cut' ? 1 : 0;
     const bOut = b.data.status === 'wd' ? 2 : b.data.status === 'cut' ? 1 : 0;
     if (aOut !== bOut) return aOut - bOut;
-    // Not-started players (pre) sort after all started players
-    const aPre = a.data.statusState === 'pre' ? 1 : 0;
-    const bPre = b.data.statusState === 'pre' ? 1 : 0;
-    if (aPre !== bPre) return aPre - bPre;
-    // Both started: sort by toPar
-    if (!aPre && !bPre) {
-      if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
-    }
-    // Both not started or same toPar: sort by tee time (earlier first)
+    // Sort by toPar (lower is better)
+    if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
+    // Tiebreak: tee time
     const aT = a.data.teeTime || '';
     const bT = b.data.teeTime || '';
     return aT < bT ? -1 : aT > bT ? 1 : 0;
@@ -2687,10 +2677,13 @@ function renderTournament() {
       return `<span style="color:${rel < 0 ? '#E63946' : rel === 0 ? '#2563EB' : '#000'};font-weight:500">${sc}</span>`;
     });
 
-    // Right column: tee time if not started, otherwise toPar
-    const rightCol = notStarted && p.data.teeTime
-      ? `<div class="lb-teetime" style="font-size:13px">${fmtTeeTime(p.data.teeTime, p.data.startHole)}</div>`
-      : `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`;
+    // Right column: always show score if available, tee time only if no score yet
+    const hasAnyScore = p.data.r1 || (p.data.currentRound > 0 && !p.data.finished);
+    const rightCol = hasAnyScore
+      ? `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`
+      : (notStarted && p.data.teeTime
+        ? `<div class="lb-teetime" style="font-size:13px">${fmtTeeTime(p.data.teeTime, p.data.startHole)}</div>`
+        : `<div class="lb-total ${scoreCls}" style="font-size:20px">${fmtScore(p.data.toPar)}</div>`);
 
     return `<div class="lb-entry" style="cursor:pointer;flex-wrap:nowrap;${mineStyle}" onclick="showScorecardByName('${esc(p.name)}')">
       ${favBtn}
@@ -2741,15 +2734,31 @@ function renderTournament() {
       if (!showAll) {
         html += `<div style="text-align:center;padding:8px 0 4px"><span style="font-size:13px;color:var(--green);cursor:pointer;font-weight:500" onclick="S._showAllFavs=true;renderTournament()">Alle ${favPlayers.length} Favoriten zeigen</span></div>`;
       }
-      html += '<div class="fav-divider">Alle Spieler</div>';
+      // "Alle Spieler [---line---] Proj. Cut +3"
+      if (S.projectedCut !== null && !S.eventFinished) {
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span>Alle Spieler</span><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
+      } else {
+        html += '<div class="fav-divider">Alle Spieler</div>';
+      }
+    } else {
+      // No favorites — show cut line as standalone divider
+      if (S.projectedCut !== null && !S.eventFinished) {
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
+      }
     }
-    html += restPlayers.map(renderTournamentEntry).join('');
-  }
-
-  // Projected cut line
-  if (S.projectedCut !== null && !S.eventFinished) {
-    const cutHtml = `<div style="text-align:center;padding:6px 12px;margin-bottom:8px;font-size:12px;color:var(--text2);background:var(--bg2);border-radius:8px">Projected Cut: <strong>${fmtScore(S.projectedCut)}</strong></div>`;
-    html = cutHtml + html;
+    // Insert cut line between players at the projected cut score
+    const cutLine = S.projectedCut !== null && !S.eventFinished
+      ? `<div style="display:flex;align-items:center;gap:8px;padding:4px 4px;margin:4px 0"><span style="flex:1;height:2px;background:var(--text3);opacity:.3"></span><span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;white-space:nowrap">PROJECTED CUT</span><span style="flex:1;height:2px;background:var(--text3);opacity:.3"></span></div>`
+      : null;
+    let cutInserted = false;
+    html += restPlayers.map(p => {
+      let prefix = '';
+      if (cutLine && !cutInserted && p.data.toPar > S.projectedCut && p.data.status !== 'cut' && p.data.status !== 'wd') {
+        prefix = cutLine;
+        cutInserted = true;
+      }
+      return prefix + renderTournamentEntry(p);
+    }).join('');
   }
 
   list.innerHTML = html;
@@ -2762,8 +2771,13 @@ function buildScorecardHeader(name, teamName, headshot, position) {
     : `<div class="scorecard-avatar-fallback">${initials}</div>`;
   const teamInfo = teamName ? `<div style="font-size:13px;color:var(--gold);font-weight:400;margin-top:1px">${esc(teamName)}</div>` : '';
   const posHtml = position ? `<div style="font-size:12px;color:var(--text3);margin-top:2px">Platz ${position}</div>` : '';
-  // Debut star
-  const fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(name));
+  // Debut star — check mastersField, also match via golfer's espnName
+  let fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(name));
+  if (!fieldEntry) {
+    // Try matching via drafted golfer's original name
+    const dg = S.golfers.find(g => g._espnName === name || normalizeName(g.name) === normalizeName(name));
+    if (dg) fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(dg.name)) || S.mastersField.find(f => normalizeName(f.name) === normalizeName(dg._espnName || ''));
+  }
   const debutStar = fieldEntry?.debut ? '<span style="color:var(--gold);font-size:14px;margin-left:4px">★</span>' : '';
   return `<div class="scorecard-header">${avatarHtml}<div class="scorecard-header-info"><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${esc(name)}${debutStar}</div>${teamInfo}${posHtml}</div></div>`;
 }
@@ -2896,45 +2910,6 @@ function renderScorecardContent(live) {
     html += '<div style="height:4px"></div>';
     html += buildNine(10, 18, 'IN', true, true);
 
-    // Per-golfer statistics
-    let birdies = 0, eagles = 0, pars = 0, bogeys = 0, dblPlus = 0, totalH = 0;
-    for (const r of activeRounds) {
-      const rh = live.holes['r' + r];
-      if (!rh) continue;
-      for (const h of rh) {
-        const pv = h.par === 'E' ? 0 : parseInt(h.par);
-        if (isNaN(pv)) {
-          // Fallback: calculate from Augusta pars
-          const ap = AUGUSTA_PARS[h.hole - 1];
-          if (ap && h.score) {
-            const diff = Math.round(h.score) - ap;
-            totalH++;
-            if (diff <= -2) eagles++;
-            else if (diff === -1) birdies++;
-            else if (diff === 0) pars++;
-            else if (diff === 1) bogeys++;
-            else dblPlus++;
-          }
-          continue;
-        }
-        totalH++;
-        if (pv <= -2) eagles++;
-        else if (pv === -1) birdies++;
-        else if (pv === 0) pars++;
-        else if (pv === 1) bogeys++;
-        else dblPlus++;
-      }
-    }
-    if (totalH > 0) {
-      const pct = v => Math.round(v / totalH * 100) + '%';
-      html += `<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center">
-        ${eagles > 0 ? `<div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#F4D03F">${eagles}</div><div style="color:var(--text3)">Eagle</div></div>` : ''}
-        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#E63946">${birdies}</div><div style="color:var(--text3)">Birdie</div></div>
-        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700">${pars}</div><div style="color:var(--text3)">Par</div></div>
-        <div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700;color:#2563EB">${bogeys}</div><div style="color:var(--text3)">Bogey</div></div>
-        ${dblPlus > 0 ? `<div style="text-align:center;padding:4px 8px;border-radius:8px;background:var(--bg2);font-size:11px"><div style="font-weight:700">${dblPlus}</div><div style="color:var(--text3)">Dbl+</div></div>` : ''}
-      </div>`;
-    }
   }
 
   document.getElementById('scorecardContent').innerHTML = html;
@@ -3541,7 +3516,7 @@ function startLiveRefresh() {
 
 
 /* ===================== Push Notifications ===================== */
-const VAPID_PUBLIC = 'BI69ibPpigizZExp4HprtpKc2KN5Hm3EufVvZovroOcFyebHXLnT7anSwj74HZUiw8C87PhrJpe9l-mbY28eJA4';
+const VAPID_PUBLIC = 'BATHtXsudbJdH5BAgQKW0eZglqK3OVDMJ6YNNktat5k8CNS1tOb-AME-UL_W8apqv_V0ClK1y6o_fud75IRomjw';
 
 async function initServiceWorker() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -3562,6 +3537,11 @@ async function subscribePush() {
   }
   try {
     const reg = await navigator.serviceWorker.ready;
+    // Unsubscribe old subscription if VAPID key changed
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) {
+      try { await oldSub.unsubscribe(); } catch(e) { console.warn('Old unsubscribe failed:', e); }
+    }
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
@@ -3666,6 +3646,44 @@ function updatePushUI() {
   const show = S.myName && ('PushManager' in window);
   btn.style.display = show ? '' : 'none';
   btn.classList.toggle('active', S.pushEnabled || S.pushFavs);
+}
+
+// Check if old push subscription is stale (VAPID key changed) and show re-subscribe banner
+async function checkPushResubscribe() {
+  if (!S.myName || !('PushManager' in window) || !('serviceWorker' in navigator)) return;
+  const hadPush = localStorage.getItem('masters_pool_push') === 'true';
+  if (!hadPush) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      // Check if this subscription still exists in Supabase
+      const { data } = await sb.from('masters_push_subscriptions').select('endpoint').eq('endpoint', sub.endpoint).maybeSingle();
+      if (data) return; // still valid
+    }
+    // Subscription is gone or doesn't match — show banner
+    localStorage.removeItem('masters_pool_push');
+    S.pushEnabled = false;
+    showPushBanner();
+  } catch(e) { console.warn('Push resubscribe check failed:', e); }
+}
+
+function showPushBanner() {
+  // Don't show if already dismissed
+  if (localStorage.getItem('masters_push_banner_dismissed')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pushBanner';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:12px;right:12px;z-index:9999;background:var(--green);color:#fff;border-radius:12px;padding:14px 16px;font-family:var(--font-body);font-size:13px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  banner.innerHTML = `
+    <div style="flex:1">
+      <div style="font-weight:600;margin-bottom:2px">Push Notifications neu aktivieren</div>
+      <div style="font-size:11px;opacity:.8">Bitte einmal neu aktivieren (Glocke oben rechts)</div>
+    </div>
+    <div style="cursor:pointer;font-size:18px;opacity:.7;padding:4px" onclick="this.parentElement.remove();localStorage.setItem('masters_push_banner_dismissed','1')">✕</div>
+  `;
+  document.body.appendChild(banner);
+  // Auto-remove after 15 seconds
+  setTimeout(() => { if (document.getElementById('pushBanner')) banner.remove(); }, 15000);
 }
 
 /* ===================== Onboarding ===================== */
@@ -3821,6 +3839,7 @@ init().then(() => {
   initServiceWorker();
   S.pushEnabled = localStorage.getItem('masters_pool_push') === 'true';
   S.pushFavs = localStorage.getItem('masters_pool_push_favs') === 'true';
+  setTimeout(checkPushResubscribe, 3000); // check after 3s
 
   // Onboarding
   if (!isRunningStandalone() && !hasSeenPWAPrompt()) {
