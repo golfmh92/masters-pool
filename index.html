@@ -2247,8 +2247,9 @@ function renderLeaderboard() {
           const fieldEntry = S.mastersField.find(f => normalizeName(f.name) === normalizeName(g.name)) || (g._espnName ? S.mastersField.find(f => normalizeName(f.name) === normalizeName(g._espnName)) : null);
           const debutStar = fieldEntry?.debut ? '<span style="color:var(--gold);font-size:9px;margin-left:2px">★</span>' : '';
           const amateurBadge = g._live?._amateur ? '<span style="font-size:9px;color:var(--text3);margin-left:2px">(a)</span>' : '';
-          return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer" onclick="event.stopPropagation();showScorecard('${g.id}')">
-            <div class="golfer-name">${esc(shortName(g.name))}${debutStar}${amateurBadge}${cutBadge}${posLabel}</div>
+          const isMatch = lbFilterVal && normalizeName(g.name).includes(lbFilterVal);
+          return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer;${isMatch ? 'background:rgba(0,103,71,.1);border-radius:8px' : ''}" onclick="event.stopPropagation();showScorecard('${g.id}')">
+            <div class="golfer-name" style="${isMatch ? 'font-weight:700' : ''}">${esc(shortName(g.name))}${debutStar}${amateurBadge}${cutBadge}${posLabel}</div>
             <div class="golfer-rounds">${rounds}</div>
             ${liveHtml}
           </div>`;
@@ -2272,8 +2273,9 @@ function renderLeaderboard() {
             }
           }
           const cutBadgeRd = isCut ? `<span style="font-size:9px;color:var(--red);font-weight:600;margin-left:4px">${gStatus === 'dq' ? 'DQ' : gStatus === 'wd' ? 'WD' : 'CUT'}</span>` : '';
-          return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer" onclick="event.stopPropagation();showScorecard('${g.id}')">
-            <div class="golfer-name">${esc(shortName(g.name))}${cutBadgeRd}</div>
+          const isMatchRd = lbFilterVal && normalizeName(g.name).includes(lbFilterVal);
+          return `<div class="golfer-row ${isCut ? 'cut' : ''}" style="cursor:pointer;${isMatchRd ? 'background:rgba(0,103,71,.1);border-radius:8px' : ''}" onclick="event.stopPropagation();showScorecard('${g.id}')">
+            <div class="golfer-name" style="${isMatchRd ? 'font-weight:700' : ''}">${esc(shortName(g.name))}${cutBadgeRd}</div>
             <div style="display:flex;align-items:center;gap:6px">
               ${thru && hasRoundScore ? `<span style="font-size:10px;color:var(--text3)">${thru}</span>` : ''}
               ${hasRoundScore ? `<div class="golfer-rd ${sCls}" style="${counting ? 'border:1.5px solid var(--green);font-weight:700' : ''}">${fmtScore(rel)}</div>` : ''}
