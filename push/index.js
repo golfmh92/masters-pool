@@ -125,8 +125,8 @@ async function main() {
         if (pv <= -3) { emoji = '🌟'; label = 'Albatross'; }
         else if (h.value === 1) { emoji = '🔥'; label = 'Hole-in-One'; }
         else if (pv <= -2) { emoji = '🦅'; label = 'Eagle'; }
-        else if (pv >= 3) { emoji = '🟥'; label = 'Triple Bogey+'; }
-        else { emoji = '🟡'; label = 'Doppel-Bogey'; }
+        else if (pv >= 3) { emoji = '💀'; label = 'Triple Bogey+'; }
+        else { emoji = '😬'; label = 'Doppel-Bogey'; }
 
         newEvents.push({ name, eventId, emoji, label, hole: h.period, round: r + 1, pv });
       }
