@@ -928,7 +928,10 @@ function showCutNotification() {
   } else {
     document.getElementById('cutNotifyIcon').textContent = '⛳';
     document.getElementById('cutNotifyTitle').textContent = 'Ab ins Wochenende!';
-    document.getElementById('cutNotifyMsg').textContent = `Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let's go! (Platz ${myRank} von ${total})`;
+    const rankMsg = myRank <= 3
+      ? `Du liegst aktuell auf Platz ${myRank} von ${total}. Aber fühl dich nicht zu sicher — der Amen Corner hat schon einige Opfer gefordert.`
+      : `Du liegst aktuell auf Platz ${myRank} von ${total}. Am Wochenende in Augusta ist noch einiges möglich.`;
+    document.getElementById('cutNotifyMsg').innerHTML = `Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let's go!<br><br>${rankMsg}`;
   }
   localStorage.setItem(key, '1');
   openModal('modalCutNotify');
