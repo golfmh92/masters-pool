@@ -2125,7 +2125,8 @@ function renderMeineGolfer() {
   const teamTotal = myTeam ? fmtScore(myTeam.total) : '—';
   const teamCls = myTeam && myTeam.total !== null ? (myTeam.total < 0 ? 'under' : myTeam.total > 0 ? 'over' : 'even') : '';
 
-  const cutLabel = S.projectedCut !== null && !S.eventFinished ? `<span style="font-size:11px;color:var(--text3);font-weight:400">Proj. Cut ${fmtScore(S.projectedCut)}</span>` : '';
+  const cutLabel = S.actualCut !== null ? `<span style="font-size:11px;color:var(--text3);font-weight:400">Cut ${fmtScore(S.actualCut)}</span>`
+    : S.projectedCut !== null && !S.eventFinished ? `<span style="font-size:11px;color:var(--text3);font-weight:400">Proj. Cut ${fmtScore(S.projectedCut)}</span>` : '';
   let html = `<div class="mg-strip"><div class="mg-title" style="display:flex;align-items:center"><span>Meine Golfer <span class="mg-score ${teamCls}" style="font-size:20px;font-weight:700;margin-left:8px">${teamTotal}</span></span><span style="flex:1"></span>${cutLabel}</div><div class="mg-scroll">`;
   for (const g of sortedGolfers) {
     const gStatus = golferStatus(g); const isCut = gStatus !== 'active';
@@ -2900,26 +2901,32 @@ function renderTournament() {
       if (!showAll) {
         html += `<div style="text-align:center;padding:8px 0 4px"><span style="font-size:13px;color:var(--green);cursor:pointer;font-weight:500" onclick="S._showAllFavs=true;renderTournament()">Alle ${favPlayers.length} Favoriten zeigen</span></div>`;
       }
-      // "Alle Spieler [---line---] Proj. Cut +3"
-      if (S.projectedCut !== null && !S.eventFinished) {
-        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span>Alle Spieler</span><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
+      // "Alle Spieler [---line---] Cut/Proj. Cut +3"
+      const cutScore = S.actualCut !== null ? S.actualCut : S.projectedCut;
+      const cutText = S.actualCut !== null ? 'Cut' : 'Proj. Cut';
+      if (cutScore !== null && (S.actualCut !== null || !S.eventFinished)) {
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span>Alle Spieler</span><span style="flex:1;height:1px;background:var(--border)"></span><span>${cutText} ${fmtScore(cutScore)}</span></div>`;
       } else {
         html += '<div class="fav-divider">Alle Spieler</div>';
       }
     } else {
       // No favorites — show cut line as standalone divider
-      if (S.projectedCut !== null && !S.eventFinished) {
-        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span style="flex:1;height:1px;background:var(--border)"></span><span>Proj. Cut ${fmtScore(S.projectedCut)}</span></div>`;
+      const cutScore2 = S.actualCut !== null ? S.actualCut : S.projectedCut;
+      const cutText2 = S.actualCut !== null ? 'Cut' : 'Proj. Cut';
+      if (cutScore2 !== null && (S.actualCut !== null || !S.eventFinished)) {
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 4px 6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600"><span style="flex:1;height:1px;background:var(--border)"></span><span>${cutText2} ${fmtScore(cutScore2)}</span></div>`;
       }
     }
-    // Insert cut line between players at the projected cut score
-    const cutLine = S.projectedCut !== null && !S.eventFinished
-      ? `<div style="display:flex;align-items:center;gap:8px;padding:4px 4px;margin:4px 0"><span style="flex:1;height:2px;background:var(--text3);opacity:.3"></span><span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;white-space:nowrap">PROJECTED CUT</span><span style="flex:1;height:2px;background:var(--text3);opacity:.3"></span></div>`
+    // Insert cut line between players at the cut score
+    const displayCutScore = S.actualCut !== null ? S.actualCut : S.projectedCut;
+    const displayCutText = S.actualCut !== null ? 'CUT' : 'PROJECTED CUT';
+    const cutLine = displayCutScore !== null && (S.actualCut !== null || !S.eventFinished)
+      ? `<div style="display:flex;align-items:center;gap:8px;padding:4px 4px;margin:4px 0"><span style="flex:1;height:2px;background:var(--text3);opacity:.3"></span><span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;white-space:nowrap">${displayCutText}</span><span style="flex:1;height:2px;background:var(--text3);opacity:.3"></span></div>`
       : null;
     let cutInserted = false;
     html += restPlayers.map(p => {
       let prefix = '';
-      if (cutLine && !cutInserted && p.data.toPar > S.projectedCut && p.data.status !== 'cut' && p.data.status !== 'wd') {
+      if (cutLine && !cutInserted && p.data.toPar > displayCutScore && p.data.status !== 'cut' && p.data.status !== 'wd') {
         prefix = cutLine;
         cutInserted = true;
       }
@@ -3498,6 +3505,7 @@ async function fetchLiveScores() {
         if (proCount === CUT_TOP) { cutScore = s.toPar; break; }
       }
       if (cutScore === null) cutScore = sorted[sorted.length - 1].toPar;
+      S.actualCut = cutScore;
       for (const [n, s] of Object.entries(scores)) {
         if (s.r1 && s.r2 && s.toPar > cutScore && s.status !== 'cut') {
           s.status = 'cut';
@@ -3505,9 +3513,18 @@ async function fetchLiveScores() {
         }
       }
     }
+    // Also detect actual cut from ESPN data (players with status 'cut')
+    if (S.actualCut === null && allScores.some(s => s.status === 'cut' || s.outStatus === 'cut')) {
+      const cutPlayers = allScores.filter(s => (s.status === 'cut' || s.outStatus === 'cut') && s.toPar !== undefined);
+      if (cutPlayers.length > 0) {
+        // Cut score = lowest toPar among cut players minus 1 (those AT cutScore made it)
+        S.actualCut = Math.min(...cutPlayers.map(s => s.toPar)) - 1;
+      }
+    }
 
     // Calculate projected cut line (during R1+R2, before actual cut)
     S.projectedCut = null;
+    if (!S.actualCut) S.actualCut = null;
     const allScoresArr = Object.values(scores);
     const withScores = allScoresArr.filter(s => s.toPar !== undefined && s.status !== 'cut' && s.status !== 'wd' && s.status !== 'dq');
     if (withScores.length > CUT_TOP && !S.eventFinished) {
