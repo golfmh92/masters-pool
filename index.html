@@ -2962,6 +2962,8 @@ function showScorecardByName(playerName) {
   if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === playerName);
   const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
 
+  S._scorecardPlayerName = playerName;
+  S._scorecardGolferId = null;
   const pos = data.position || '';
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(playerName, team?.name, data.headshot, pos);
   renderScorecardContent(data);
@@ -2974,11 +2976,37 @@ function showScorecard(golferId) {
   if (!golfer || !golfer._live) { showToast('Keine Daten verfügbar'); return; }
   const team = S.participants.find(p => p.id === golfer.participant_id);
 
+  S._scorecardGolferId = golferId;
+  S._scorecardPlayerName = null;
   const pos = golfer._live?.position || '';
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot, pos);
   renderScorecardContent(golfer._live);
   track('scorecard', golfer.name);
   openModal('modalScorecard');
+}
+
+function refreshOpenScorecard() {
+  const modal = document.getElementById('modalScorecard');
+  if (!modal || !modal.classList.contains('open')) return;
+  if (S._scorecardGolferId) {
+    const golfer = S.golfers.find(g => g.id === S._scorecardGolferId);
+    if (golfer && golfer._live) {
+      const team = S.participants.find(p => p.id === golfer.participant_id);
+      const pos = golfer._live?.position || '';
+      document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot, pos);
+      renderScorecardContent(golfer._live);
+    }
+  } else if (S._scorecardPlayerName) {
+    const data = S.liveScores[S._scorecardPlayerName];
+    if (data) {
+      let draftedGolfer = S.golfers.find(g => normalizeName(g.name) === normalizeName(S._scorecardPlayerName));
+      if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === S._scorecardPlayerName);
+      const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
+      const pos = data.position || '';
+      document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(S._scorecardPlayerName, team?.name, data.headshot, pos);
+      renderScorecardContent(data);
+    }
+  }
 }
 
 function renderScorecardContent(live) {
@@ -3096,11 +3124,12 @@ function openModal(id) {
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
+  if (id === 'modalScorecard') { S._scorecardGolferId = null; S._scorecardPlayerName = null; }
 }
 // Close modals on backdrop click + prevent background scroll
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
+    if (e.target === overlay) { overlay.classList.remove('open'); if (overlay.id === 'modalScorecard') { S._scorecardGolferId = null; S._scorecardPlayerName = null; } }
   });
   overlay.addEventListener('touchmove', e => {
     if (!e.target.closest('.modal')) e.preventDefault();
@@ -3557,6 +3586,7 @@ async function fetchLiveScores() {
         freezeFinalScores();
       }
       render();
+      refreshOpenScorecard();
     }
   } catch (err) {
     console.warn('Live scoring fetch failed:', err);
