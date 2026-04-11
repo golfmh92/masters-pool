@@ -819,6 +819,16 @@ body::before{content:'';position:fixed;inset:0;background:
   </div>
 </div>
 
+<!-- Cut Notification -->
+<div class="modal-overlay" id="modalCutNotify" style="z-index:400">
+  <div class="modal" style="max-width:340px;text-align:center;padding:32px 24px">
+    <div id="cutNotifyIcon" style="font-size:48px;margin-bottom:12px"></div>
+    <div id="cutNotifyTitle" style="font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:8px"></div>
+    <div id="cutNotifyMsg" style="font-size:14px;color:var(--text2);line-height:1.5;margin-bottom:20px"></div>
+    <button class="btn btn-primary" onclick="closeModal('modalCutNotify')" style="width:100%">Weiter</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -892,6 +902,33 @@ async function init() {
   // Remove splash screen
   const splash = document.getElementById('splash');
   if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 300); }
+  // Show cut notification once per user
+  showCutNotification();
+}
+
+function showCutNotification() {
+  if (!S.myName) return;
+  const key = 'masters_cut_notify_2026';
+  if (localStorage.getItem(key)) return;
+  const myP = S.participants.find(p => p.name === S.myName);
+  if (!myP) return;
+  const myGolfers = S.golfers.filter(g => g.participant_id === myP.id);
+  const cutCount = myGolfers.filter(g => golferStatus(g) === 'cut').length;
+  const madeCount = myGolfers.filter(g => golferStatus(g) === 'active').length;
+  // Only show if cut has happened (some golfers have cut status)
+  if (cutCount === 0 && madeCount === myGolfers.length) return;
+  const eliminated = madeCount < 3;
+  if (eliminated) {
+    document.getElementById('cutNotifyIcon').textContent = '💚';
+    document.getElementById('cutNotifyTitle').textContent = 'Leider vorbei...';
+    document.getElementById('cutNotifyMsg').textContent = 'Deine Golfer haben es leider nicht ins Wochenende geschafft. Nächstes Jahr greifst du wieder an — Augusta wartet!';
+  } else {
+    document.getElementById('cutNotifyIcon').textContent = '⛳';
+    document.getElementById('cutNotifyTitle').textContent = 'Ab ins Wochenende!';
+    document.getElementById('cutNotifyMsg').textContent = 'Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let\'s go!';
+  }
+  localStorage.setItem(key, '1');
+  openModal('modalCutNotify');
 }
 
 function setIdentity(name) {
