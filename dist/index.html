@@ -2997,15 +2997,23 @@ function refreshOpenScorecard() {
     const fp = JSON.stringify(live.holes) + ':' + live.toPar + ':' + live.thru;
     if (fp === S._scorecardFingerprint) return;
     S._scorecardFingerprint = fp;
-    content.style.transition = 'opacity .75s ease';
-    content.style.opacity = '0';
-    setTimeout(() => {
-      title.innerHTML = titleHtml;
-      renderScorecardContent(live);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => { content.style.opacity = '1'; });
-      });
-    }, 750);
+    // Snapshot old cell values before re-render
+    const oldVals = {};
+    content.querySelectorAll('[data-sc]').forEach(el => { oldVals[el.dataset.sc] = el.innerHTML; });
+    title.innerHTML = titleHtml;
+    renderScorecardContent(live);
+    // Fade in only changed cells
+    content.querySelectorAll('[data-sc]').forEach(el => {
+      const key = el.dataset.sc;
+      if (oldVals[key] !== undefined && oldVals[key] !== el.innerHTML) {
+        el.style.transition = 'none';
+        el.style.opacity = '0';
+        requestAnimationFrame(() => {
+          el.style.transition = 'opacity .75s ease';
+          el.style.opacity = '1';
+        });
+      }
+    });
   };
   if (S._scorecardGolferId) {
     const golfer = S.golfers.find(g => g.id === S._scorecardGolferId);
@@ -3100,13 +3108,13 @@ function renderScorecardContent(live) {
               const ap = AUGUSTA_PARS[i - 1];
               if (ap) relPar = '' + (Math.round(hole.score) - ap);
             }
-            h += `<td><span class="${holeClass(relPar)}">${Math.round(hole.score)}</span></td>`;
+            h += `<td data-sc="r${r}h${i}"><span class="${holeClass(relPar)}">${Math.round(hole.score)}</span></td>`;
           } else {
-            h += '<td style="color:var(--text3)">\u2014</td>';
+            h += `<td data-sc="r${r}h${i}" style="color:var(--text3)">\u2014</td>`;
           }
         }
-        h += `<td style="font-weight:700">${hasScore ? Math.round(total) : '\u2014'}</td>`;
-        if (hasExtraCol) h += `<td style="font-weight:700">${fillExtra && roundScore ? roundScore : ''}</td>`;
+        h += `<td data-sc="r${r}${label}" style="font-weight:700">${hasScore ? Math.round(total) : '\u2014'}</td>`;
+        if (hasExtraCol) h += `<td data-sc="r${r}tot" style="font-weight:700">${fillExtra && roundScore ? roundScore : ''}</td>`;
         h += '</tr>';
       }
 
@@ -3116,13 +3124,13 @@ function renderScorecardContent(live) {
 
     // Totals summary
     html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
-    html += `<div style="font-size:13px;color:var(--text2)">Gesamt: <strong style="color:var(--green)">${fmtScore(live.toPar)}</strong></div>`;
+    html += `<div data-sc="total" style="font-size:13px;color:var(--text2)">Gesamt: <strong style="color:var(--green)">${fmtScore(live.toPar)}</strong></div>`;
     for (const r of activeRounds) {
       const sc = live['r' + r];
       const tp = sc ? sc - PAR : null;
       const roundToPar = live['r' + r + '_toPar'];
       const midRoundDisplay = live.currentRound === r && roundToPar !== undefined ? fmtScore(roundToPar) + ' (' + live.thru + ')' : null;
-      html += `<div style="font-size:13px;color:var(--text3)">R${r}: ${tp !== null ? fmtScore(tp) : (midRoundDisplay || '\u2014')}</div>`;
+      html += `<div data-sc="rnd${r}" style="font-size:13px;color:var(--text3)">R${r}: ${tp !== null ? fmtScore(tp) : (midRoundDisplay || '\u2014')}</div>`;
     }
     html += '</div>';
 
