@@ -68,8 +68,8 @@ body::before{content:'';position:fixed;inset:0;background:
 
 /* ===== Views ===== */
 .views{flex:1;position:relative;overflow:hidden}
-.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--tab-h) + var(--safe-bottom) + 16px);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .25s ease,transform .25s ease}
-.view.active{opacity:1;transform:translateY(0);pointer-events:auto}
+.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--tab-h) + var(--safe-bottom) + 16px);opacity:0;transform:translateY(0);pointer-events:none}
+.view.active{opacity:1;pointer-events:auto}
 
 /* ===== Tab Bar ===== */
 .tab-bar{position:absolute;bottom:0;left:0;right:0;height:calc(var(--tab-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:rgba(255,255,255,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;z-index:100}
