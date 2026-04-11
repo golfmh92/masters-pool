@@ -924,11 +924,11 @@ function showCutNotification() {
   if (eliminated) {
     document.getElementById('cutNotifyIcon').textContent = '💚';
     document.getElementById('cutNotifyTitle').textContent = 'Leider vorbei...';
-    document.getElementById('cutNotifyMsg').textContent = `Deine Golfer haben es leider nicht ins Wochenende geschafft. Du beendest das Turnier auf Platz ${myRank} von ${total}. Nächstes Jahr greifst du wieder an — Augusta wartet!`;
+    document.getElementById('cutNotifyMsg').textContent = `Deine Golfer haben es leider nicht ins Wochenende geschafft. Nächstes Jahr greifst du wieder an — Augusta wartet! (Platz ${myRank} von ${total})`;
   } else {
     document.getElementById('cutNotifyIcon').textContent = '⛳';
     document.getElementById('cutNotifyTitle').textContent = 'Ab ins Wochenende!';
-    document.getElementById('cutNotifyMsg').textContent = `Du liegst aktuell auf Platz ${myRank} von ${total}. Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let's go!`;
+    document.getElementById('cutNotifyMsg').textContent = `Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let's go! (Platz ${myRank} von ${total})`;
   }
   localStorage.setItem(key, '1');
   openModal('modalCutNotify');
