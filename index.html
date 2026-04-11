@@ -908,7 +908,7 @@ async function init() {
 
 function showCutNotification() {
   if (!S.myName) return;
-  const key = 'masters_cut_notify_2026';
+  const key = 'masters_cut_notify_2026_v2';
   if (localStorage.getItem(key)) return;
   const myP = S.participants.find(p => p.name === S.myName);
   if (!myP) return;
