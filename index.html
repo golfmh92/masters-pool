@@ -1019,15 +1019,6 @@ function getGolferScore(golferId, round) {
 }
 
 
-function getCurrentRoundToPar(data) {
-  for (let r = 4; r >= 1; r--) {
-    const key = 'r' + r + '_toPar';
-    if (data[key] !== undefined && data[key] !== null) return data[key];
-    if (data['r' + r]) return data['r' + r] - PAR;
-  }
-  return 999;
-}
-
 function calcTeamRoundScore(participantId, round) {
   const teamGolfers = S.golfers.filter(g => g.participant_id === participantId);
   const count = (round <= 2) ? 4 : 3;
@@ -2301,13 +2292,10 @@ function renderLeaderboard() {
         const aTP = a._live ? a._live.toPar : 999;
         const bTP = b._live ? b._live.toPar : 999;
         if (aTP !== bTP) return aTP - bTP;
-        // Tiebreak: best current round (like ESPN)
-        const aToday = a._live ? getCurrentRoundToPar(a._live) : 999;
-        const bToday = b._live ? getCurrentRoundToPar(b._live) : 999;
-        if (aToday !== bToday) return aToday - bToday;
-        const aT = a._live?.teeTime || '';
-        const bT = b._live?.teeTime || '';
-        return aT < bT ? -1 : aT > bT ? 1 : 0;
+        // Tiebreak: ESPN sortOrder (official tie-breaking)
+        const aSO = a._live?.sortOrder || 999;
+        const bSO = b._live?.sortOrder || 999;
+        return aSO - bSO;
       });
 
       expandHtml = '<div class="lb-expand-inner">';
@@ -2770,14 +2758,8 @@ function renderTournament() {
     if (aOut !== bOut) return aOut - bOut;
     // Sort by toPar (lower is better)
     if (a.data.toPar !== b.data.toPar) return a.data.toPar - b.data.toPar;
-    // Tiebreak: best current round (like ESPN)
-    const aToday = getCurrentRoundToPar(a.data);
-    const bToday = getCurrentRoundToPar(b.data);
-    if (aToday !== bToday) return aToday - bToday;
-    // Final tiebreak: tee time
-    const aT = a.data.teeTime || '';
-    const bT = b.data.teeTime || '';
-    return aT < bT ? -1 : aT > bT ? 1 : 0;
+    // Tiebreak: ESPN sortOrder (official tie-breaking)
+    return (a.data.sortOrder || 999) - (b.data.sortOrder || 999);
   });
 
   // Compute ranks on FULL list — rank stored on each player
@@ -3497,7 +3479,8 @@ async function fetchLiveScores() {
         nextRound,
         roundTeeTimes,
         headshot: c.id ? `https://a.espncdn.com/combiner/i?img=/i/headshots/golf/players/full/${c.id}.png&w=96&h=70` : '',
-        position: status.position?.displayName || ''
+        position: status.position?.displayName || '',
+        sortOrder: c.sortOrder || 999
       };
     }
 
