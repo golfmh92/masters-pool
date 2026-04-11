@@ -2988,13 +2988,23 @@ function showScorecard(golferId) {
 function refreshOpenScorecard() {
   const modal = document.getElementById('modalScorecard');
   if (!modal || !modal.classList.contains('open')) return;
+  const content = document.getElementById('scorecardContent');
+  const title = document.getElementById('scorecardTitle');
+  const doUpdate = (titleHtml, live) => {
+    content.style.transition = 'opacity .25s ease';
+    content.style.opacity = '0';
+    setTimeout(() => {
+      title.innerHTML = titleHtml;
+      renderScorecardContent(live);
+      content.style.opacity = '1';
+    }, 250);
+  };
   if (S._scorecardGolferId) {
     const golfer = S.golfers.find(g => g.id === S._scorecardGolferId);
     if (golfer && golfer._live) {
       const team = S.participants.find(p => p.id === golfer.participant_id);
       const pos = golfer._live?.position || '';
-      document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot, pos);
-      renderScorecardContent(golfer._live);
+      doUpdate(buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot, pos), golfer._live);
     }
   } else if (S._scorecardPlayerName) {
     const data = S.liveScores[S._scorecardPlayerName];
@@ -3003,8 +3013,7 @@ function refreshOpenScorecard() {
       if (!draftedGolfer) draftedGolfer = S.golfers.find(g => g._espnName === S._scorecardPlayerName);
       const team = draftedGolfer ? S.participants.find(p => p.id === draftedGolfer.participant_id) : null;
       const pos = data.position || '';
-      document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(S._scorecardPlayerName, team?.name, data.headshot, pos);
-      renderScorecardContent(data);
+      doUpdate(buildScorecardHeader(S._scorecardPlayerName, team?.name, data.headshot, pos), data);
     }
   }
 }
