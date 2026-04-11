@@ -2964,6 +2964,7 @@ function showScorecardByName(playerName) {
 
   S._scorecardPlayerName = playerName;
   S._scorecardGolferId = null;
+  S._scorecardFingerprint = JSON.stringify(data.holes) + ':' + data.toPar + ':' + data.thru;
   const pos = data.position || '';
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(playerName, team?.name, data.headshot, pos);
   renderScorecardContent(data);
@@ -2978,6 +2979,7 @@ function showScorecard(golferId) {
 
   S._scorecardGolferId = golferId;
   S._scorecardPlayerName = null;
+  S._scorecardFingerprint = JSON.stringify(golfer._live.holes) + ':' + golfer._live.toPar + ':' + golfer._live.thru;
   const pos = golfer._live?.position || '';
   document.getElementById('scorecardTitle').innerHTML = buildScorecardHeader(golfer.name, team?.name, golfer._live?.headshot, pos);
   renderScorecardContent(golfer._live);
@@ -2991,13 +2993,19 @@ function refreshOpenScorecard() {
   const content = document.getElementById('scorecardContent');
   const title = document.getElementById('scorecardTitle');
   const doUpdate = (titleHtml, live) => {
-    content.style.transition = 'opacity .5s ease';
+    // Build fingerprint from hole-level data to detect actual changes
+    const fp = JSON.stringify(live.holes) + ':' + live.toPar + ':' + live.thru;
+    if (fp === S._scorecardFingerprint) return;
+    S._scorecardFingerprint = fp;
+    content.style.transition = 'opacity .4s ease';
     content.style.opacity = '0';
     setTimeout(() => {
       title.innerHTML = titleHtml;
       renderScorecardContent(live);
-      content.style.opacity = '1';
-    }, 500);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { content.style.opacity = '1'; });
+      });
+    }, 400);
   };
   if (S._scorecardGolferId) {
     const golfer = S.golfers.find(g => g.id === S._scorecardGolferId);
@@ -3587,6 +3595,9 @@ async function fetchLiveScores() {
     const changed = fingerprint !== S._lastFingerprint;
     S._lastFingerprint = fingerprint;
 
+    // Always refresh open scorecard (hole-level data may change without fingerprint change)
+    refreshOpenScorecard();
+
     if (changed) {
       // Preload headshot images in background
       Object.values(scores).forEach(s => { if (s.headshot) { new Image().src = s.headshot; } });
@@ -3595,7 +3606,6 @@ async function fetchLiveScores() {
         freezeFinalScores();
       }
       render();
-      refreshOpenScorecard();
     }
   } catch (err) {
     console.warn('Live scoring fetch failed:', err);
