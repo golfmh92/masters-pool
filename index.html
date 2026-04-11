@@ -68,7 +68,7 @@ body::before{content:'';position:fixed;inset:0;background:
 
 /* ===== Views ===== */
 .views{flex:1;position:relative;overflow:hidden}
-.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--tab-h) + var(--safe-bottom) + 16px);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .25s ease,transform .25s ease}
+.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--tab-h) + var(--safe-bottom) + 16px);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .75s ease,transform .75s ease}
 .view.active{opacity:1;transform:translateY(0);pointer-events:auto}
 
 /* ===== Tab Bar ===== */
@@ -261,7 +261,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .st-top3 .st-row:nth-child(n+4){display:none}
 
 /* Stats Slide-In Panel */
-.st-panel{position:fixed;inset:0;z-index:200;pointer-events:none;opacity:0;transition:opacity .25s}
+.st-panel{position:fixed;inset:0;z-index:200;pointer-events:none;opacity:0;transition:opacity .75s}
 .st-panel.open{pointer-events:auto;opacity:1}
 .st-panel-bg{position:absolute;inset:0;background:rgba(0,0,0,.3)}
 .st-panel-sheet{position:absolute;top:0;right:0;bottom:0;width:100%;max-width:500px;background:var(--bg);transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -299,7 +299,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .btn-block{width:100%}
 
 /* ===== Modal ===== */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;overscroll-behavior:contain}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .75s;overscroll-behavior:contain}
 .modal-overlay.open{opacity:1;pointer-events:auto}
 .modal{width:100%;max-width:500px;max-height:85vh;background:var(--card);border-radius:20px 20px 0 0;padding:8px 20px calc(var(--safe-bottom) + 20px);overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);overscroll-behavior:contain}
 .modal-overlay.open .modal{transform:translateY(0)}
@@ -333,7 +333,7 @@ body::before{content:'';position:fixed;inset:0;background:
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ===== Splash Screen ===== */
-#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#006747,#004D35);transition:opacity .3s ease}
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#006747,#004D35);transition:opacity .75s ease}
 #splash.fade-out{opacity:0;pointer-events:none}
 #splash .splash-title{font-family:var(--font-display);font-size:32px;color:#fff;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
 #splash .splash-sub{font-size:14px;color:rgba(255,255,255,.5);letter-spacing:5px;text-transform:uppercase;margin-bottom:24px}
@@ -901,7 +901,7 @@ async function init() {
   render();
   // Remove splash screen
   const splash = document.getElementById('splash');
-  if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 300); }
+  if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 750); }
   // Show cut notification once per user
   showCutNotification();
 }
@@ -2997,7 +2997,7 @@ function refreshOpenScorecard() {
     const fp = JSON.stringify(live.holes) + ':' + live.toPar + ':' + live.thru;
     if (fp === S._scorecardFingerprint) return;
     S._scorecardFingerprint = fp;
-    content.style.transition = 'opacity .25s ease';
+    content.style.transition = 'opacity .75s ease';
     content.style.opacity = '0';
     setTimeout(() => {
       title.innerHTML = titleHtml;
@@ -3005,7 +3005,7 @@ function refreshOpenScorecard() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => { content.style.opacity = '1'; });
       });
-    }, 250);
+    }, 750);
   };
   if (S._scorecardGolferId) {
     const golfer = S.golfers.find(g => g.id === S._scorecardGolferId);
