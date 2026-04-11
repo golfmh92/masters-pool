@@ -918,14 +918,17 @@ function showCutNotification() {
   // Only show if cut has happened (some golfers have cut status)
   if (cutCount === 0 && madeCount === myGolfers.length) return;
   const eliminated = madeCount < 3;
+  const ranking = getRanking();
+  const myRank = ranking.findIndex(t => t.name === S.myName) + 1;
+  const total = ranking.length;
   if (eliminated) {
     document.getElementById('cutNotifyIcon').textContent = '💚';
     document.getElementById('cutNotifyTitle').textContent = 'Leider vorbei...';
-    document.getElementById('cutNotifyMsg').textContent = 'Deine Golfer haben es leider nicht ins Wochenende geschafft. Nächstes Jahr greifst du wieder an — Augusta wartet!';
+    document.getElementById('cutNotifyMsg').textContent = `Deine Golfer haben es leider nicht ins Wochenende geschafft. Du beendest das Turnier auf Platz ${myRank} von ${total}. Nächstes Jahr greifst du wieder an — Augusta wartet!`;
   } else {
     document.getElementById('cutNotifyIcon').textContent = '⛳';
     document.getElementById('cutNotifyTitle').textContent = 'Ab ins Wochenende!';
-    document.getElementById('cutNotifyMsg').textContent = 'Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let\'s go!';
+    document.getElementById('cutNotifyMsg').textContent = `Du liegst aktuell auf Platz ${myRank} von ${total}. Deine Golfer haben den Cut geschafft — jetzt wird um das Green Jacket gespielt. Let's go!`;
   }
   localStorage.setItem(key, '1');
   openModal('modalCutNotify');
