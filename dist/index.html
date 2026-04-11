@@ -3011,12 +3011,9 @@ function refreshOpenScorecard() {
       content.querySelectorAll('[data-sc]').forEach(el => {
         const key = el.dataset.sc;
         if (oldVals[key] !== undefined && oldVals[key] !== el.innerHTML) {
-          el.style.transition = 'none';
-          el.style.opacity = '0';
-          requestAnimationFrame(() => {
-            el.style.transition = 'opacity 1.5s ease';
-            el.style.opacity = '1';
-          });
+          el.classList.remove('score-changed');
+          void el.offsetWidth; // force reflow to restart animation
+          el.classList.add('score-changed');
         }
       });
     }
