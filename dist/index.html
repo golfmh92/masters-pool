@@ -68,7 +68,7 @@ body::before{content:'';position:fixed;inset:0;background:
 
 /* ===== Views ===== */
 .views{flex:1;position:relative;overflow:hidden}
-.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--tab-h) + var(--safe-bottom) + 16px);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .75s ease,transform .75s ease}
+.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--tab-h) + var(--safe-bottom) + 16px);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .25s ease,transform .25s ease}
 .view.active{opacity:1;transform:translateY(0);pointer-events:auto}
 
 /* ===== Tab Bar ===== */
@@ -261,7 +261,7 @@ body::before{content:'';position:fixed;inset:0;background:
 .st-top3 .st-row:nth-child(n+4){display:none}
 
 /* Stats Slide-In Panel */
-.st-panel{position:fixed;inset:0;z-index:200;pointer-events:none;opacity:0;transition:opacity .75s}
+.st-panel{position:fixed;inset:0;z-index:200;pointer-events:none;opacity:0;transition:opacity .25s}
 .st-panel.open{pointer-events:auto;opacity:1}
 .st-panel-bg{position:absolute;inset:0;background:rgba(0,0,0,.3)}
 .st-panel-sheet{position:absolute;top:0;right:0;bottom:0;width:100%;max-width:500px;background:var(--bg);transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -333,7 +333,7 @@ body::before{content:'';position:fixed;inset:0;background:
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ===== Splash Screen ===== */
-#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#006747,#004D35);transition:opacity .75s ease}
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#006747,#004D35);transition:opacity .3s ease}
 #splash.fade-out{opacity:0;pointer-events:none}
 #splash .splash-title{font-family:var(--font-display);font-size:32px;color:#fff;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
 #splash .splash-sub{font-size:14px;color:rgba(255,255,255,.5);letter-spacing:5px;text-transform:uppercase;margin-bottom:24px}
@@ -901,7 +901,7 @@ async function init() {
   render();
   // Remove splash screen
   const splash = document.getElementById('splash');
-  if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 750); }
+  if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 300); }
   // Show cut notification once per user
   showCutNotification();
 }
