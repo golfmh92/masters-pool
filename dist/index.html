@@ -2991,13 +2991,13 @@ function refreshOpenScorecard() {
   const content = document.getElementById('scorecardContent');
   const title = document.getElementById('scorecardTitle');
   const doUpdate = (titleHtml, live) => {
-    content.style.transition = 'opacity .25s ease';
+    content.style.transition = 'opacity .5s ease';
     content.style.opacity = '0';
     setTimeout(() => {
       title.innerHTML = titleHtml;
       renderScorecardContent(live);
       content.style.opacity = '1';
-    }, 250);
+    }, 500);
   };
   if (S._scorecardGolferId) {
     const golfer = S.golfers.find(g => g.id === S._scorecardGolferId);
