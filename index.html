@@ -3554,17 +3554,19 @@ async function fetchLiveScores() {
     const anyoneMidRound = allScores.some(s => !s.finished && s.currentRound > 0);
     const withR2 = allScores.filter(s => s.r1 && s.r2);
     if (!anyoneMidRound && withR2.length > CUT_TOP) {
-      const sorted = [...withR2].sort((a, b) => a.toPar - b.toPar);
+      // Use R1+R2 score (not current total) for cut calculation
+      const r2ToPar = s => (s.r1 + s.r2) - PAR;
+      const sorted = [...withR2].sort((a, b) => r2ToPar(a) - r2ToPar(b));
       let proCount = 0;
       let cutScore = null;
       for (const s of sorted) {
         if (!s._amateur) proCount++;
-        if (proCount === CUT_TOP) { cutScore = s.toPar; break; }
+        if (proCount === CUT_TOP) { cutScore = r2ToPar(s); break; }
       }
-      if (cutScore === null) cutScore = sorted[sorted.length - 1].toPar;
+      if (cutScore === null) cutScore = r2ToPar(sorted[sorted.length - 1]);
       S.actualCut = cutScore;
       for (const [n, s] of Object.entries(scores)) {
-        if (s.r1 && s.r2 && s.toPar > cutScore && s.status !== 'cut') {
+        if (s.r1 && s.r2 && r2ToPar(s) > cutScore && s.status !== 'cut') {
           s.status = 'cut';
           s.madeCut = false;
         }
